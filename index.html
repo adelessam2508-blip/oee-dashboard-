@@ -1126,5 +1126,45 @@ function applySettings(){
  try{refresh();}catch(err){showErr2(err);}
 }
 </script>
+ <script>
+// تحميل ملف Excel أوتوماتيك من نفس المجلد
+window.addEventListener('DOMContentLoaded', function() {
+    console.log('جاري تحميل ملف OEE8.xlsx أوتوماتيك...');
+    
+    fetch('./OEE8.xlsx')
+        .then(response => {
+            if (!response.ok) throw new Error('فشل تحميل الملف');
+            return response.arrayBuffer();
+        })
+        .then(arrayBuffer => {
+            console.log('تم تحميل الملف بنجاح، جاري التحليل...');
+            
+            // البحث عن عنصر input file في الصفحة
+            const fileInput = document.querySelector('input[type="file"]');
+            if (fileInput) {
+                // إنشاء File object من البيانات
+                const file = new File([arrayBuffer], 'OEE8.xlsx', {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+                
+                // إنشاء DataTransfer لتمرير الملف
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+                
+                // تشغيل حدث change
+                fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+                
+                console.log('تم تمرير الملف للداشبورد بنجاح!');
+            } else {
+                console.error('لم يتم العثور على عنصر رفع الملف');
+            }
+        })
+        .catch(error => {
+            console.error('خطأ في تحميل الملف:', error);
+            alert('حدث خطأ في تحميل ملف البيانات. تأكد من وجود ملف OEE8.xlsx في نفس المجلد.');
+        });
+});
+</script>
 </body>
 </html>
