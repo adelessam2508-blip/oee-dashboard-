@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOLO | لوحة كفاءة التريكو | Knitting OEE Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0d1424;--card:rgba(255,255,255,.05);--line:rgba(255,255,255,.10);--txt:#eef2f7;--mut:#9aa7ba;
+--cy:#f6c453;--te:#34d399;--am:#fb923c;--rd:#f87171;--bl:#7cb8ff;--vi:#ffd98e;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:-1;
+background:radial-gradient(600px 400px at 85% 10%,rgba(246,196,83,.10),transparent),
+radial-gradient(700px 500px at 10% 90%,rgba(124,184,255,.10),transparent),
+radial-gradient(500px 400px at 50% 50%,rgba(52,211,153,.06),transparent);
+animation:bgmove 14s ease-in-out infinite alternate}
+@keyframes bgmove{from{transform:translateY(0) scale(1)}to{transform:translateY(-30px) scale(1.05)}}
+body.lang-ar .en{display:none}
+body.lang-en .ar{display:none}
+body.lang-both .en::before{content:' | '}
+.langbtn.active{background:var(--cy);color:#132038}
+#errBanner{display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:#7f1d1d;color:#fff;
+padding:10px 16px;font-size:13px;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.5)}
+header{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;padding:14px 26px;
+border-bottom:1px solid var(--line);backdrop-filter:blur(8px);position:sticky;top:0;z-index:50;background:rgba(13,20,36,.85)}
+header::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;
+background:linear-gradient(90deg,transparent,var(--cy),var(--bl),transparent);background-size:200% 100%;
+animation:headerSweep 6s linear infinite;opacity:.55}
+@keyframes headerSweep{to{background-position:-200% 0}}
+.brand{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.logo{position:relative;display:flex;align-items:center;gap:6px;direction:ltr;height:64px}
+.logo-txt{position:relative;color:#ffffff;
+font-family:'Segoe UI',Arial,sans-serif;font-weight:600;font-size:34px;letter-spacing:6px;line-height:1;white-space:nowrap;
+text-shadow:0 0 18px rgba(246,196,83,.35);animation:logoGlow 3.5s ease-in-out infinite}
+@keyframes logoGlow{0%,100%{text-shadow:0 0 12px rgba(246,196,83,.25)}50%{text-shadow:0 0 22px rgba(246,196,83,.55)}}
+.logo-arc{position:relative;width:54px;height:54px;flex:none;
+border:5px solid #ffffff;border-radius:50%;border-left-color:var(--cy);
+animation:logoSpin 6s linear infinite;filter:drop-shadow(0 0 8px rgba(246,196,83,.3))}
+@keyframes logoSpin{to{transform:rotate(360deg)}}
+.dev{font-size:10px;color:var(--mut);letter-spacing:.4px;direction:ltr;text-align:right;font-family:'Tajawal',sans-serif}
+.hbtns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{cursor:pointer;border:1px solid var(--line);background:linear-gradient(135deg,#f6c453,#e0a52f);color:#132038;
+font-weight:800;font-family:inherit;padding:10px 14px;border-radius:12px;font-size:13px;transition:.25s;box-shadow:0 4px 18px rgba(246,196,83,.22);
+position:relative;overflow:hidden}
+.btn::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%);
+transform:translateX(-120%);transition:transform .55s ease}
+.btn:hover::after{transform:translateX(120%)}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(246,196,83,.38)}
+.btn:active{transform:translateY(0);box-shadow:0 3px 12px rgba(246,196,83,.3)}
+.btn.ghost{background:transparent;color:var(--txt)}
+.btn.ghost::after{background:linear-gradient(120deg,transparent 30%,rgba(246,196,83,.18) 50%,transparent 70%)}
+#fname{color:var(--mut);font-size:12px}
+main{padding:20px 26px 60px;max-width:1500px;margin:auto}
+#drop{border:2px dashed rgba(246,196,83,.45);border-radius:20px;padding:46px;text-align:center;margin:16px 0;
+background:var(--card);transition:.3s;animation:fadeUp .7s both}
+#drop.over{border-color:var(--cy);background:rgba(246,196,83,.08);transform:scale(1.01)}
+#drop .big{font-size:44px;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end;background:var(--card);border:1px solid var(--line);
+border-radius:16px;padding:14px;margin:14px 0;animation:fadeUp .6s both}
+.filters label{font-size:11px;color:var(--mut);display:block;margin-bottom:4px}
+.filters input,.filters select{background:#16203a;border:1px solid var(--line);color:var(--txt);border-radius:10px;
+padding:8px 10px;font-family:inherit;font-size:13px;outline:none;transition:.2s;max-width:170px}
+.filters input:focus,.filters select:focus{border-color:var(--cy)}
+#scopeInfo{color:var(--mut);font-size:12px;margin:6px 2px}
+.printwrap{position:relative}
+.pbtn{position:absolute;top:10px;left:10px;z-index:5;background:rgba(246,196,83,.12);border:1px solid rgba(246,196,83,.4);
+color:var(--cy);border-radius:8px;cursor:pointer;font-size:14px;padding:4px 9px;transition:.2s;font-family:inherit}
+.pbtn:hover{background:rgba(246,196,83,.3);transform:scale(1.08)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:16px 0}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;position:relative;overflow:hidden;
+animation:fadeUp .6s both;transition:.25s}
+.kpi:hover{transform:translateY(-4px);border-color:rgba(246,196,83,.45)}
+.kpi::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.06) 50%,transparent 70%);
+transform:translateX(-100%);animation:shine 4s infinite}
+@keyframes shine{60%{transform:translateX(100%)}100%{transform:translateX(100%)}}
+.kpi .t{font-size:11px;color:var(--mut)}
+.kpi .v{font-size:26px;font-weight:800;margin:4px 0}
+.kpi .s{font-size:10px;color:var(--mut)}
+.kpi .bar{height:4px;border-radius:4px;background:#223050;margin-top:8px;overflow:hidden}
+.kpi .bar i{display:block;height:100%;border-radius:4px;width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+/* staggered cascade entrance for KPI cards, panels, and summary boxes — small motion touch on load/refresh */
+.kpis .kpi:nth-child(1){animation-delay:.02s}.kpis .kpi:nth-child(2){animation-delay:.06s}
+.kpis .kpi:nth-child(3){animation-delay:.10s}.kpis .kpi:nth-child(4){animation-delay:.14s}
+.kpis .kpi:nth-child(5){animation-delay:.18s}.kpis .kpi:nth-child(6){animation-delay:.22s}
+.kpis .kpi:nth-child(7){animation-delay:.26s}.kpis .kpi:nth-child(8){animation-delay:.30s}
+.kpis .kpi:nth-child(9){animation-delay:.34s}.kpis .kpi:nth-child(10){animation-delay:.38s}
+.grid .panel:nth-child(1){animation-delay:.04s}.grid .panel:nth-child(2){animation-delay:.10s}
+.grid .panel:nth-child(3){animation-delay:.16s}.grid .panel:nth-child(4){animation-delay:.22s}
+.grid .panel:nth-child(5){animation-delay:.28s}.grid .panel:nth-child(6){animation-delay:.34s}
+.sum .box:nth-child(1){animation-delay:.04s}.sum .box:nth-child(2){animation-delay:.10s}
+.sum .box:nth-child(3){animation-delay:.16s}.sum .box:nth-child(4){animation-delay:.22s}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:14px;margin:14px 0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;animation:fadeUp .7s both;position:relative}
+.panel h3{font-size:13px;color:var(--cy);margin-bottom:10px;font-weight:700}
+canvas{max-height:260px}
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+th{background:#1a2740;color:var(--cy);padding:8px 6px;font-weight:700;position:sticky;top:0}
+td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:center}
+tr:hover td{background:rgba(246,196,83,.06)}
+.tot td{font-weight:800;background:rgba(246,196,83,.14);color:var(--cy);border-top:2px solid var(--cy)}
+.tblwrap{max-height:420px;overflow:auto;border-radius:10px}
+.good{color:var(--te)}.warn{color:var(--am)}.crit{color:var(--rd)}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.sum .box{border-radius:14px;padding:12px;border:1px solid var(--line);animation:fadeUp .7s both}
+.sum .box h4{margin-bottom:8px;font-size:13px}
+.sum .box ul{list-style:none;font-size:12px;line-height:1.9}
+.sum .g{background:rgba(52,211,153,.08)}.sum .w{background:rgba(251,146,60,.08)}.sum .c{background:rgba(248,113,113,.08)}
+#heat td{min-width:34px;font-size:10px;color:#081018;font-weight:700;border:1px solid rgba(0,0,0,.25)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+#overlay{position:fixed;inset:0;background:rgba(13,20,36,.9);display:none;align-items:center;justify-content:center;z-index:99;flex-direction:column;gap:14px}
+#overlay.on{display:flex}
+.spin{width:54px;height:54px;border-radius:50%;border:5px solid rgba(246,196,83,.25);border-top-color:var(--cy);animation:rot 1s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.hidden{display:none}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:98;display:none;align-items:center;justify-content:center}
+.modal.open{display:flex}
+.modal .panel{background:#16203a}
+#report{display:none}
+#report .rhead{border:2px solid #000;padding:10px;margin-bottom:12px;text-align:center}
+#report .rhead h2{font-size:16px;margin:0 0 6px}
+#report .rmeta{font-size:11px;color:#333}
+#report h3{background:#d9d9d9;border:1px solid #8a8a8a;padding:5px 8px;margin:14px 0 0;font-size:12px;color:#000}
+#report table{width:100%;border-collapse:collapse;margin:0 0 10px;font-size:10.5px}
+#report th,#report td{border:1px solid #8a8a8a;padding:4px 6px;text-align:center;color:#000}
+#report th{background:#efefef;font-weight:700}
+#report td.t{text-align:right}
+#report .tot td{background:#e5e7eb;color:#000;border-top:2px solid #000;font-weight:800}
+#report tr{page-break-inside:avoid}
+#report h3{page-break-after:avoid}
+@media print{
+ body{background:#fff}
+ body.print-mode *{visibility:hidden}
+ body.print-mode .print-target,body.print-mode .print-target *{visibility:visible}
+ body.print-mode .print-target{position:absolute;top:0;right:0;left:0;width:100%;background:#fff;border:none;animation:none;margin:0}
+ body.print-mode .pbtn{display:none!important}
+ body.print-mode .print-target h3{color:#000}
+ body.print-mode .print-target .tblwrap{max-height:none;overflow:visible}
+ body.print-mode .print-target table th{background:#e5e7eb;color:#000}
+ body.print-mode .print-target table td{color:#000;border-bottom:1px solid #bbb}
+ body.print-mode .print-target .tot td{background:#e5e7eb;color:#000;border-top:2px solid #000}
+ body.print-mode .print-target .kpi{background:#fff;border:1px solid #999;animation:none}
+ body.print-mode .print-target .kpi .t,body.print-mode .print-target .kpi .s{color:#444}
+ body.print-mode .print-target .kpi .v{color:#000}
+ body.print-mode .print-target .box{background:#fff;border:1px solid #999;animation:none}
+ body.print-mode .print-target .box h4,body.print-mode .print-target .box ul,body.print-mode .print-target .box li{color:#000}
+ body.print-mode .print-target canvas{max-height:380px}
+ body.report-mode header,body.report-mode main,body.report-mode .modal{display:none!important}
+ body.report-mode{background:#fff}
+ body.report-mode #report{display:block}
+ body.report-mode .pbtn{display:none!important}
+ @page soloPDF{size:A4 landscape;margin:8mm}
+ body.pdf-mode{page:soloPDF;background:var(--bg)}
+ body.pdf-mode *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:none!important}
+ body.pdf-mode header{position:static;background:rgba(13,20,36,.9)}
+ body.pdf-mode .hbtns{display:none}
+ body.pdf-mode #drop{display:none}
+ body.pdf-mode .filters{display:none}
+ body.pdf-mode .pbtn{display:none!important}
+ body.pdf-mode .kpi::after{display:none}
+ body.pdf-mode .grid{display:block}
+ body.pdf-mode .panel{margin:0 0 10px;break-before:page;page-break-before:always}
+ body.pdf-mode .tblwrap{max-height:none;overflow:visible}
+ body.pdf-mode #kpiWrap{break-before:auto;page-break-before:auto}
+ body.pdf-mode #sumWrap{break-before:page;page-break-before:always}
+ body.pdf-mode .sum{display:grid}
+ body.pdf-mode canvas{max-height:340px}
+}
+</style>
+</head>
+<body class="lang-both">
+<div id="errBanner"></div>
+<div id="overlay"><div class="spin"></div><div><span class="ar">بيتم تحليل الملف وبناء الداشبورد...</span><span class="en">Analyzing file & building dashboard...</span></div></div>
+<header>
+ <div class="brand">
+  <div class="logo">
+   <span class="logo-txt">SOLO</span>
+   <span class="logo-arc"></span>
+  </div>
+  <div class="dev"><span class="ar">لوحة كفاءة قسم التريكو</span><span class="en">Knitting Dept. OEE Dashboard</span></div>
+  <div class="dev">Developed by Eng. Adel Essam — Planning &amp; IE Dept.</div>
+ </div>
+ <div class="hbtns">
+  <span id="fname"><span class="ar">لم يتم رفع ملف بعد</span><span class="en">No file uploaded</span></span>
+  <button class="btn ghost langbtn" data-lang="ar" onclick="setLang('ar')">AR</button>
+  <button class="btn ghost langbtn" data-lang="en" onclick="setLang('en')">EN</button>
+  <button class="btn ghost langbtn active" data-lang="both" onclick="setLang('both')">EN|AR</button>
+  <button class="btn ghost" onclick="openSettings()">⚙️ <span class="ar">الإعدادات</span><span class="en">Settings</span></button>
+  <button class="btn ghost" onclick="printColorPDF()">🎨 <span class="ar">PDF بالألوان</span><span class="en">Color PDF</span></button>
+  <button class="btn ghost" onclick="printReport()">🖨️ <span class="ar">تقرير شامل</span><span class="en">Full Report</span></button>
+  <label class="btn" for="file">📂 <span class="ar">ارفع الإكسيل</span><span class="en">Upload Excel</span></label>
+  <input type="file" id="file" accept=".xlsx,.xls" class="hidden" onchange="handleFile(this.files[0])">
+ </div>
+</header>
+<main>
+ <div id="drop">
+  <div class="big">📥</div>
+  <h2><span class="ar">اسحب ملف الإكسيل هنا وأفلته</span><span class="en">Drag &amp; drop the Excel file here</span></h2>
+  <p style="color:var(--mut);margin-top:8px"><span class="ar">شيتات: التحميل • الانتاج • الاعطال • بيانات الماكينات — تحليل أوتوماتيك (أيام الراحة لا تظهر بالرسوم)</span><span class="en">Sheets: Loading • Production • Breakdowns • Machines Master — fully automatic (off-days hidden)</span></p>
+ </div>
+
+ <div class="filters hidden" id="filtersBar">
+  <div><label><span class="ar">الفترة</span><span class="en">Period</span></label><select id="fPeriod"><option>All</option><option>Day</option><option>Week</option><option>Month</option><option>Custom</option></select></div>
+  <div><label><span class="ar">التاريخ المرجعي</span><span class="en">Date</span></label><input type="date" id="fDate"></div>
+  <div><label><span class="ar">من</span><span class="en">From</span></label><input type="date" id="fFrom"></div>
+  <div><label><span class="ar">إلى</span><span class="en">To</span></label><input type="date" id="fTo"></div>
+  <div><label><span class="ar">النوع</span><span class="en">Type</span></label><select id="fType"><option value="">All</option><option>SC</option><option>DC</option></select></div>
+  <div><label><span class="ar">إبرة</span><span class="en">Needle</span></label><select id="fNeedle"></select></div>
+  <div><label><span class="ar">طرقة</span><span class="en">Room</span></label><select id="fRoom"></select></div>
+  <div><label><span class="ar">عميل</span><span class="en">Customer</span></label><select id="fCust"></select></div>
+  <div><label><span class="ar">ماكينة</span><span class="en">Machine</span></label><select id="fMachine"></select></div>
+  <button class="btn" onclick="refresh()">🔄 <span class="ar">تحديث</span><span class="en">Refresh</span></button>
+ </div>
+ <div id="scopeInfo" class="hidden"></div>
+
+ <div class="printwrap hidden" id="kpiWrap">
+  <button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button>
+  <div class="kpis" id="kpiRow"></div>
+ </div>
+
+ <div class="grid hidden" id="chartsTop">
+  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🎯 <span class="ar">الإنتاج: المستهدف مقابل الفعلي (دستة)</span><span class="en">Production: Target vs Actual (doz)</span></h3><canvas id="chProd"></canvas></div>
+  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>⚡ <span class="ar">OEE اليومي</span><span class="en">Daily OEE</span></h3><canvas id="chOEE"></canvas></div>
+  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🧩 <span class="ar">التوافر / الأداء / الجودة</span><span class="en">Availability / Performance / Quality</span></h3><canvas id="chAPQ"></canvas></div>
+  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>⏱ <span class="ar">ساعات التوقف والخسائر</span><span class="en">Downtime Hours &amp; Losses</span></h3><canvas id="chDT"></canvas></div>
+  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>📊 <span class="ar">باريتو أسباب الأعطال</span><span class="en">Breakdown Causes Pareto</span></h3><canvas id="chPar"></canvas></div>
+  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🌀 <span class="ar">حالة الماكينات</span><span class="en">Machines Status</span></h3><canvas id="chStatus"></canvas></div>
+ </div>
+
+ <div class="grid hidden" id="tablesGrid">
+  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🧵 <span class="ar">التحميل والأداء حسب الإبرة</span><span class="en">Loading &amp; Performance by Needle</span></h3><div class="tblwrap" id="tNeedle"></div></div>
+  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🏠 <span class="ar">تحليل الطرق</span><span class="en">Room Analysis</span></h3><div class="tblwrap" id="tRoom"></div></div>
+  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>👥 <span class="ar">تحليل العملاء</span><span class="en">Customers Analysis</span></h3><div class="tblwrap" id="tCust"></div></div>
+  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>💸 <span class="ar">خسائر الأعطال حسب الطرقة</span><span class="en">Losses by Room</span></h3><div class="tblwrap" id="tLossRoom"></div></div>
+  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🚨 <span class="ar">أعلى 5 ماكينات خسارة</span><span class="en">Top 5 Loss Machines</span></h3><div class="tblwrap" id="tTopLoss"></div></div>
+  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>📋 <span class="ar">جدول باريتو الأعطال</span><span class="en">Breakdown Pareto Table</span></h3><div class="tblwrap" id="tPareto"></div></div>
+ </div>
+
+ <div class="panel hidden" style="margin:14px 0"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🗺️ <span class="ar">خريطة حرارة التحقيق (ماكينة × يوم شغل)</span><span class="en">Achievement Heatmap (Machine × Working Day)</span></h3><div class="tblwrap" id="heat"></div></div>
+
+ <div class="printwrap hidden" id="sumWrap" style="margin:14px 0">
+  <button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button>
+  <div class="sum" id="sumRow"></div>
+ </div>
+</main>
+
+<div id="report"></div>
+
+<div id="settings" class="modal">
+ <div class="panel" style="width:min(560px,92%)">
+  <h3>⚙️ <span class="ar">إعدادات الحساب</span><span class="en">Calculation Settings</span></h3>
+  <div class="filters" style="animation:none">
+   <div><label><span class="ar">إجمالي الماكينات</span><span class="en">Total Machines</span></label><input id="sTotal" type="number" value="498"></div>
+   <div><label><span class="ar">هدف SC يومي</span><span class="en">SC Daily Target</span></label><input id="sSC" type="number" value="20"></div>
+   <div><label><span class="ar">هدف DC يومي</span><span class="en">DC Daily Target</span></label><input id="sDC" type="number" value="10"></div>
+   <div><label><span class="ar">قيمة الدستة (ج)</span><span class="en">Dozen Value (EGP)</span></label><input id="sEGP" type="number" value="150"></div>
+  </div>
+  <p style="color:var(--mut);font-size:11px;margin:6px 2px"><span class="ar">التصنيف بالإبرة: كل الإبر SC عدا 2144 فهي DC (و4001-4999 احتياطياً DC). المستهدف = الكمية المحملة • الفعلي = انتاج + درجة 2.</span><span class="en">Needle-based type: all needles SC except 2144 = DC (4001-4999 fallback DC). Target = Loaded qty • Actual = Production + Grade B.</span></p>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+   <button class="btn ghost" onclick="closeSettings()"><span class="ar">إلغاء</span><span class="en">Cancel</span></button>
+   <button class="btn" onclick="applySettings()"><span class="ar">حفظ وتحديث</span><span class="en">Save &amp; Refresh</span></button>
+  </div>
+ </div>
+</div>
+
+<script>
+'use strict';
+window.addEventListener('error',function(e){
+ var b=document.getElementById('errBanner');
+ if(b){b.style.display='block';b.textContent='⚠️ '+e.message;}
+});
+
+/* ===== Language ===== */
+let LANG='both';
+function bi(ar,en){ if(LANG==='ar')return ar; if(LANG==='en')return en; return ar+' | '+en; }
+function setLang(l){
+ LANG=l;
+ document.body.classList.remove('lang-ar','lang-en','lang-both');
+ document.body.classList.add('lang-'+l);
+ document.documentElement.dir=(l==='en')?'ltr':'rtl';
+ var bs=document.querySelectorAll('.langbtn');
+ for(var i=0;i<bs.length;i++){ bs[i].classList.toggle('active', bs[i].getAttribute('data-lang')===l); }
+ try{ refresh(); }catch(e){}
+}
+
+/* ===== Settings =====
+ * S = global factory/business parameters, editable from the Settings modal (applySettings()).
+ *   total     : total machine count in the factory
+ *   sc / dc   : standard output rate for SC / DC machines, in dozen per 24h (hpd)
+ *   hpd       : planning horizon per machine per day, in hours (24h = 2 x 12h shifts)
+ *   egp       : cost, in EGP, assigned per lost dozen (used to price downtime losses)
+ *   planned   : set of "رقم العطل" (downtime cause codes) treated as *planned* stops
+ *               (e.g. scheduled maintenance) rather than unplanned downtime
+ *   cap       : if true, Performance is capped at 100% (overproduction doesn't inflate OEE)
+ *   goodX/warnX: thresholds used to color-code KPIs and build the Good/Warning/Critical summary
+ *   maxDT     : downtime hours threshold (per machine, per period) flagged as "excessive"
+ */
+const S={total:498,sc:20,dc:10,hpd:24,egp:150,planned:new Set(['5','7','13']),cap:true,
+goodOEE:.85,warnOEE:.6,goodAch:.95,warnAch:.8,goodUtil:.85,maxDT:12};
+// DATA = raw rows parsed from the uploaded workbook (see parseAll), one array per sheet,
+// plus DATA.master: a Map<machineNumber, {nd:needle, rm:room, tp:'SC'|'DC'}> built from the
+// "بيانات الماكينات" reference sheet (falls back to defaultTypeFor() when a machine is missing).
+const DATA={load:[],prod:[],dt:[],master:new Map(),minD:0,maxD:0,name:''};
+let CH={};      // live Chart.js instances, keyed by canvas id, so they can be destroyed on refresh
+let LASTR=null; // last computed result object (see compute()), reused by printReport()
+
+/* ===== Utils ===== */
+const $=s=>document.querySelector(s);
+function txt(v){ return (v==null)?'':String(v).trim(); }
+function num(v){ var x=parseFloat(v); return isFinite(x)?x:0; }
+// normH: normalize a header/label for fuzzy matching — lowercase, strip spaces/./-//,
+// and unify common Arabic letter variants (ة/ه, ى/ي, أإآ/ا) so headers like
+// "تاريخ التحميل " or "الكميه المحمله/دستة" still match a plain search term like "الكميه".
+function normH(s){
+ return txt(s).toLowerCase().replace(/[\s\/\.\-]/g,'').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/[أإآ]/g,'ا');
+}
+// colIdx: find the column index in header row h whose normalized text contains (or equals)
+// one of the normalized candidate names. Tries each candidate in order; first hit wins.
+// This is what lets the dashboard tolerate small variations in the uploaded sheet's headers.
+function colIdx(h,names){
+ if(!h||!h.length)return -1;
+ for(var i=0;i<names.length;i++){
+  var n=normH(names[i]); if(!n)continue;
+  for(var j=0;j<h.length;j++){
+   var x=normH(h[j]);
+   if(x&&(x===n||x.indexOf(n)>-1))return j;
+  }
+ }
+ return -1;
+}
+// serial: convert a date cell (Excel serial number, JS Date, or "d/m/y" text) into an
+// Excel-style day serial number (days since 1899-12-30), which the rest of the app uses
+// as its universal "day" key for grouping and filtering. Returns 0 if unparseable.
+function serial(v){
+ if(typeof v==='number'&&v>20000&&v<80000)return Math.floor(v);
+ if(v instanceof Date)return Math.floor(Date.UTC(v.getUTCFullYear(),v.getUTCMonth(),v.getUTCDate())/86400000)+25569;
+ var s=txt(v); var m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+ if(m){var y=+m[3]; if(y<100)y+=2000; return Math.floor(Date.UTC(y,+m[1]-1,+m[2])/86400000)+25569;}
+ var t=Date.parse(s); if(!isNaN(t))return Math.floor(t/86400000)+25569;
+ return 0;
+}
+function inpSerial(id){var v=$('#'+id).value; if(!v)return 0; var p=v.split('-'); return Math.floor(Date.UTC(+p[0],+p[1]-1,+p[2])/86400000)+25569;}
+function dLabel(d){var x=new Date(Math.round((d-25569)*86400000)); return x.getUTCDate()+'/'+(x.getUTCMonth()+1);}
+function dFull(d){var x=new Date(Math.round((d-25569)*86400000)); return x.getUTCDate()+'/'+(x.getUTCMonth()+1)+'/'+String(x.getUTCFullYear()).slice(2);}
+function mach(v){ return typeof v==='number'?String(Math.round(v)):txt(v); }
+function pct(a,b){ return b? a/b : 0; }
+function f0(x){ return Math.round(x).toLocaleString('en-US'); }
+function f1(x){ return x.toFixed(1); }
+function fp(x){ return (x*100).toFixed(1)+'%'; }
+function matchF(f,v){ if(!f||f==='*')return true; return String(f).toLowerCase()===String(v).toLowerCase(); }
+function sumBy(list,fn){ var s=0; for(var i=0;i<list.length;i++){ s+=fn(list[i]); } return s; }
+
+/* ===== Print ===== */
+function printSec(el){
+ var olds=document.querySelectorAll('.print-target');
+ for(var i=0;i<olds.length;i++)olds[i].classList.remove('print-target');
+ el.classList.add('print-target');
+ document.body.classList.add('print-mode');
+ var clean=function(){ el.classList.remove('print-target'); document.body.classList.remove('print-mode'); window.removeEventListener('afterprint',clean); };
+ window.addEventListener('afterprint',clean);
+ setTimeout(function(){ window.print(); },60);
+}
+function printColorPDF(){
+ document.body.classList.add('pdf-mode');
+ var clean=function(){ document.body.classList.remove('pdf-mode'); window.removeEventListener('afterprint',clean); };
+ window.addEventListener('afterprint',clean);
+ setTimeout(function(){ window.print(); },100);
+}
+
+/* ===== Tables ===== */
+function tbl(h,rows,totals){
+ var s='<table><tr>';
+ for(var i=0;i<h.length;i++)s+='<th>'+h[i]+'</th>';
+ s+='</tr>';
+ for(var r=0;r<rows.length;r++){
+  s+='<tr>';
+  for(var c=0;c<rows[r].length;c++)s+='<td>'+rows[r][c]+'</td>';
+  s+='</tr>';
+ }
+ if(totals){
+  s+='<tr class="tot">';
+  for(var t=0;t<totals.length;t++)s+='<td>'+totals[t]+'</td>';
+  s+='</tr>';
+ }
+ return s+'</table>';
+}
+function xlT(title,headers,rows,totals){
+ var h='<h3>'+title+'</h3><table><tr>';
+ for(var i=0;i<headers.length;i++)h+='<th>'+headers[i]+'</th>';
+ h+='</tr>';
+ for(var r=0;r<rows.length;r++){
+  h+='<tr>';
+  for(var c=0;c<rows[r].length;c++)h+='<td'+(c===0?' class="t"':'')+'>'+rows[r][c]+'</td>';
+  h+='</tr>';
+ }
+ if(totals){
+  h+='<tr class="tot">';
+  for(var t=0;t<totals.length;t++)h+='<td'+(t===0?' class="t"':'')+'>'+totals[t]+'</td>';
+  h+='</tr>';
+ }
+ return h+'</table>';
+}
+
+/* ===== Type by needle ===== */
+function ndIsDC(nd){ var s=txt(nd).toLowerCase().replace(/[\s\.]/g,''); return s==='2144'||s.indexOf('dc')>-1; }
+function defaultTypeFor(m,nd){
+ if(ndIsDC(nd))return 'DC';
+ var n=parseInt(m,10);
+ if(n>=4000&&n<=4999)return 'DC';
+ return 'SC';
+}
+// typeFromCell: read the official type straight from the "بيانات الماكينات" TYPE column.
+// Tolerates variants like "مقفول SC" / "مفتوح SC" / "D.C" / "dc" by just checking for a
+// DC/SC substring after stripping spaces and dots. Returns '' if the cell doesn't say either,
+// so the caller can fall back to defaultTypeFor().
+function typeFromCell(v){
+ var s=txt(v).toUpperCase().replace(/[\s\.]/g,'');
+ if(s.indexOf('DC')>-1)return 'DC';
+ if(s.indexOf('SC')>-1)return 'SC';
+ return '';
+}
+function ensureM(m,nd,rm){
+ var e=DATA.master.get(m);
+ if(!e){ DATA.master.set(m,{nd:nd||'',rm:rm||'',tp:defaultTypeFor(m,nd)}); }
+ else{
+  if(!e.nd&&nd)e.nd=nd;
+  if(!e.rm&&rm)e.rm=rm;
+  if(ndIsDC(nd))e.tp='DC';
+ }
+ return DATA.master.get(m);
+}
+function mNd(m){var e=DATA.master.get(m);return e?e.nd:'';}
+function mRm(m){var e=DATA.master.get(m);return e?e.rm:'';}
+function mTp(m){var e=DATA.master.get(m);return e?e.tp:'SC';}
+function rate(m){ return mTp(m)==='DC'? S.dc/S.hpd : S.sc/S.hpd; }
+
+/* ===== File reading ===== */
+// sheet: locate a sheet by fuzzy name match (see normH), then auto-detect the header row
+// (skips leading title/blank rows — the first row with 3+ non-empty cells is the header).
+// Returns {hdr: [...headerCells], rows: [...dataRows]} or null if no matching sheet exists.
+function sheet(wb,names){
+ var sn=null;
+ for(var i=0;i<wb.SheetNames.length;i++){
+  var cur=normH(wb.SheetNames[i]);
+  for(var j=0;j<names.length;j++){ if(cur.indexOf(normH(names[j]))>-1){ sn=wb.SheetNames[i]; break; } }
+  if(sn)break;
+ }
+ if(!sn)return null;
+ var a=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:'',raw:true});
+ var hi=0;
+ while(hi<Math.min(a.length,10)&&a[hi].filter(function(c){return txt(c)!=='';}).length<3)hi++;
+ return {hdr:a[hi]||[],rows:a.slice(hi+1)};
+}
+
+// parseAll: read the 4 workbook sheets into DATA.
+//   "بيانات الماكينات" (machine master) -> DATA.master  : official needle/room/type per machine
+//   "التحميل"          (loading)        -> DATA.load    : {d,m,nd,rm,cust,qty,mv} per machine/day
+//                                                          mv = machine-share loaded that day (0-1+)
+//   "الانتاج"          (production)     -> DATA.prod    : {d,m,nd,rm,cust,dz,gb,pcs} per machine/day
+//                                                          dz = good dozen, gb = Grade B dozen
+//   "الاعطال"          (breakdowns)     -> DATA.dt      : {d,m,rm,sh,code,lb,dur,pl} per stoppage
+//                                                          pl = true if this cause code is "planned"
+// Rows failing basic validity checks (missing date/machine, non-positive quantities, a
+// downtime duration outside 0-24h) are silently skipped. Any machine seen in load/prod/dt
+// but missing from the master sheet gets an inferred entry via ensureM()/defaultTypeFor().
+function parseAll(wb){
+ DATA.load=[];DATA.prod=[];DATA.dt=[];DATA.master=new Map();
+ var M=sheet(wb,['بيانات الماكينات']);
+ if(M){
+  var h=M.hdr;
+  var cM=colIdx(h,['رقم الماكينة','رقم الماكينه','Machine']);
+  // BUGFIX: the sheet's own TYPE column (official SC/DC designation) was never read — every
+  // machine's type was silently recomputed via the >4000-code heuristic (defaultTypeFor)
+  // instead, even when the sheet explicitly said otherwise. Now the sheet's value wins, and
+  // the heuristic is only a fallback for rows where TYPE is blank or unrecognized.
+  var cTp=colIdx(h,['TYPE','النوع']);
+  var cN=colIdx(h,['Needle']);
+  var cR=colIdx(h,['طرقة','Room']);
+  if(cM>=0){
+   for(var i=0;i<M.rows.length;i++){
+    var r=M.rows[i]; var m=mach(r[cM]); if(!m)continue;
+    var ndv=cN>=0?txt(r[cN]):''; var rmv=cR>=0?txt(r[cR]):'';
+    var tpv=cTp>=0?typeFromCell(r[cTp]):'';
+    DATA.master.set(m,{nd:ndv,rm:rmv,tp:tpv||defaultTypeFor(m,ndv)});
+   }
+  }
+ }
+ var L=sheet(wb,['التحميل']);
+ if(L){
+  var hl=L.hdr;
+  var lN=colIdx(hl,['Needle']),lR=colIdx(hl,['طرقة']),lM=colIdx(hl,['رقم الماكينة','رقم الماكينه']),lD=colIdx(hl,['تاريخ التحميل']),lC=colIdx(hl,['العميل']),lQ=colIdx(hl,['الكميه']),lV=colIdx(hl,['عدد الماكينات']);
+  if(lM>=0&&lD>=0&&lV>=0){
+   for(var a2=0;a2<L.rows.length;a2++){
+    var lr=L.rows[a2]; var d=serial(lr[lD]); var m2=mach(lr[lM]); var mv=num(lr[lV]);
+    if(!d||!m2||mv<=0)continue;
+    DATA.load.push({d:d,m:m2,nd:lN>=0?txt(lr[lN]):'',rm:lR>=0?txt(lr[lR]):'',cust:lC>=0?txt(lr[lC]):'',qty:lQ>=0?num(lr[lQ]):0,mv:mv});
+   }
+  }
+ }
+ var P=sheet(wb,['الانتاج']);
+ if(P){
+  var hp=P.hdr;
+  var pC=colIdx(hp,['العميل']),pM=colIdx(hp,['رقم الماكينة','رقم الماكينه']),pN=colIdx(hp,['Needle']),pR=colIdx(hp,['طرقة']),pD=colIdx(hp,['تاريخ الكارت']),pDz=colIdx(hp,['الانتاج']),pGB=colIdx(hp,['Grade B','GradeB']),pP=colIdx(hp,['العدد']);
+  if(pM>=0&&pD>=0&&pDz>=0){
+   for(var b2=0;b2<P.rows.length;b2++){
+    var pr=P.rows[b2]; var d3=serial(pr[pD]); var m3=mach(pr[pM]); var dz=num(pr[pDz]);
+    if(!d3||!m3||dz<=0)continue;
+    var gb=pGB>=0?num(pr[pGB]):0; if(gb<0)gb=0;
+    DATA.prod.push({d:d3,m:m3,nd:pN>=0?txt(pr[pN]):'',rm:pR>=0?txt(pr[pR]):'',cust:pC>=0?txt(pr[pC]):'',dz:dz,gb:gb,pcs:pP>=0?num(pr[pP]):0});
+   }
+  }
+ }
+ var B=sheet(wb,['الاعطال']);
+ if(B){
+  var hb=B.hdr;
+  var bD=colIdx(hb,['التاريخ']),bR=colIdx(hb,['طرقة']),bS=colIdx(hb,['ورديه']),bC=colIdx(hb,['رقم العطل']),bN=colIdx(hb,['اسم العطل']),bM=colIdx(hb,['رقم الماكينه','رقم الماكينة']),bF=colIdx(hb,['من']),bT=colIdx(hb,['الي']),bDu=colIdx(hb,['المده','المدة']);
+  if(bM>=0&&bD>=0){
+   for(var c2=0;c2<B.rows.length;c2++){
+    var br=B.rows[c2]; var d4=serial(br[bD]); var m4=mach(br[bM]);
+    if(!d4||!m4)continue;
+    var du=bDu>=0?num(br[bDu]):0;
+    if(du<=0){
+     var ff=bF>=0?num(br[bF]):0; var tt=bT>=0?num(br[bT]):0;
+     if(ff>0||tt>0){ du=tt-ff; if(du<0)du+=24; }
+    }
+    if(du<=0||du>24)continue;
+    var code=bC>=0?mach(br[bC]):'';
+    var lb=bN>=0?txt(br[bN]):'';
+    if(!lb)lb='(بدون اسم)';
+    if(code)lb=code+' - '+lb;
+    DATA.dt.push({d:d4,m:m4,rm:bR>=0?txt(br[bR]):'',sh:bS>=0?txt(br[bS]):'',code:code,lb:lb,dur:du,pl:S.planned.has(code)});
+   }
+  }
+ }
+ var i2;
+ for(i2=0;i2<DATA.load.length;i2++)ensureM(DATA.load[i2].m,DATA.load[i2].nd,DATA.load[i2].rm);
+ for(i2=0;i2<DATA.prod.length;i2++)ensureM(DATA.prod[i2].m,DATA.prod[i2].nd,DATA.prod[i2].rm);
+ for(i2=0;i2<DATA.dt.length;i2++)ensureM(DATA.dt[i2].m,'',DATA.dt[i2].rm);
+ var all=[];
+ for(i2=0;i2<DATA.load.length;i2++)all.push(DATA.load[i2].d);
+ for(i2=0;i2<DATA.prod.length;i2++)all.push(DATA.prod[i2].d);
+ for(i2=0;i2<DATA.dt.length;i2++)all.push(DATA.dt[i2].d);
+ DATA.minD=all.length?Math.min.apply(null,all):0;
+ DATA.maxD=all.length?Math.max.apply(null,all):0;
+}
+
+/* ===== Filters ===== */
+function fillSel(id,vals){
+ var el=$('#'+id); if(!el)return;
+ var cur=el.value;
+ var html='<option value="">'+bi('الكل','All')+'</option>';
+ for(var i=0;i<vals.length;i++)html+='<option value="'+vals[i]+'">'+vals[i]+'</option>';
+ el.innerHTML=html;
+ el.value=cur;
+}
+function populateFilters(){
+ var nds={},rms={},cus={},mch={};
+ DATA.master.forEach(function(v,m){ if(v.nd)nds[v.nd]=1; mch[m]=1; });
+ var i;
+ for(i=0;i<DATA.load.length;i++){ var r=DATA.load[i]; if(r.nd)nds[r.nd]=1; if(r.rm)rms[r.rm]=1; if(r.cust)cus[r.cust]=1; mch[r.m]=1; }
+ for(i=0;i<DATA.prod.length;i++){ var p=DATA.prod[i]; if(p.nd)nds[p.nd]=1; if(p.rm)rms[p.rm]=1; if(p.cust)cus[p.cust]=1; mch[p.m]=1; }
+ for(i=0;i<DATA.dt.length;i++){ var b=DATA.dt[i]; if(b.rm)rms[b.rm]=1; mch[b.m]=1; }
+ var numSort=function(a,b){return (+a)-(+b);};
+ fillSel('fNeedle',Object.keys(nds).sort(numSort));
+ fillSel('fRoom',Object.keys(rms).sort(numSort));
+ fillSel('fCust',Object.keys(cus).sort());
+ fillSel('fMachine',Object.keys(mch).sort(numSort));
+}
+
+/* ===== Aggregation helpers ===== */
+function addP(d,k,r){ var o=d.get(k); if(!o){o={dz:0,gb:0,pcs:0};d.set(k,o);} o.dz+=r.dz; o.gb+=r.gb; o.pcs+=r.pcs; }
+function addD(d,k,t,u,ld,le){ var o=d.get(k); if(!o){o={t:0,u:0,ld:0,le:0};d.set(k,o);} o.t+=t; o.u+=u; o.ld+=ld; o.le+=le; }
+
+// groupTable: build the summary table for one grouping dimension — 'Needle', 'Room', or 'Cust'.
+// For each group key it accumulates:
+//   pl  (planned/available hours)  tgt (target/loaded dozen)  dz+gb (actual dozen)  dtU (unplanned downtime hours)
+// then derives per-group Availability/Performance/Quality -> OEE, same formula as the factory-wide
+// totals in compute(). 'Cust' mode is special: since one machine can be shared across several
+// customers on the same day (see CON — the per-machine customer split built in compute()),
+// its capacity/downtime are allocated proportionally by each customer's share (it.cv) of that
+// machine's daily load, instead of by machine-day like Needle/Room.
+function groupTable(mode,LM,CON,PM,DM,PG){
+ var g=new Map(),uq=new Map();
+ function G(k){ var o=g.get(k); if(!o){o={pl:0,dtU:0,dz:0,gb:0,tgt:0};g.set(k,o);} return o; }
+ function U(k,m){ var s=uq.get(k); if(!s){s=new Set();uq.set(k,s);} s.add(m); }
+ LM.forEach(function(v,k){
+  var m=k.split('|')[1];
+  if(mode==='Cust'){
+   CON.get(k).forEach(function(it){ var o=G(it.cust); o.pl+=S.hpd*it.cv; o.tgt+=it.qty; U(it.cust,m); });
+  }else{
+   var key=mode==='Needle'?(mNd(m)||'(؟)'):(mRm(m)||'(؟)');
+   var o2=G(key); o2.pl+=S.hpd*v.cap; o2.tgt+=v.q; U(key,m);
+  }
+ });
+ if(mode==='Cust'){ PG.forEach(function(v,k){ var o=G(k); o.dz+=v.dz; o.gb+=v.gb; }); }
+ else{
+  PM.forEach(function(v,k){
+   var m=k.split('|')[1];
+   var key=mode==='Needle'?(mNd(m)||'(؟)'):(mRm(m)||'(؟)');
+   var o=G(key); o.dz+=v.dz; o.gb+=v.gb;
+   if(!LM.has(k))o.pl+=S.hpd;
+  });
+ }
+ DM.forEach(function(v,k){
+  var m=k.split('|')[1];
+  if(mode==='Cust'){
+   if(CON.has(k)){
+    var tot=0; CON.get(k).forEach(function(it){tot+=it.cv;});
+    if(tot>0)CON.get(k).forEach(function(it){ var o=G(it.cust); o.dtU+=v.u*it.cv/tot; });
+   }
+  }else{
+   var key=mode==='Needle'?(mNd(m)||'(؟)'):(mRm(m)||'(؟)');
+   G(key).dtU+=v.u;
+  }
+ });
+ var out=[];
+ g.forEach(function(v,k){
+  var act=v.dz+v.gb;
+  var av=pct(Math.max(0,v.pl-v.dtU),v.pl);
+  var pf=pct(act,v.tgt);
+  var ql=pct(v.dz,act);
+  out.push({k:k,cap:v.pl/S.hpd,uniq:uq.has(k)?uq.get(k).size:0,target:v.tgt,dz:act,ach:pct(act,v.tgt),dt:v.dtU,oee:av*Math.min(1,pf)*ql});
+ });
+ out.sort(function(a,b){return b.dz-a.dz;});
+ return out;
+}
+function gTotals(list){
+ var m=0,tg=0,dz=0,dt=0,ow=0;
+ for(var i=0;i<list.length;i++){ m+=list[i].uniq; tg+=list[i].target; dz+=list[i].dz; dt+=list[i].dt; ow+=list[i].oee*list[i].dz; }
+ return {m:m,tg:tg,dz:dz,dt:dt,oee:dz?ow/dz:0};
+}
+
+/* ===== Compute =====
+ * compute() is the heart of the dashboard: it takes the currently selected period + filters,
+ * pulls the matching rows out of DATA.load/prod/dt, and aggregates them into every number the
+ * UI shows (KPIs, daily trend, per-needle/room/customer tables, Pareto, heatmap, alerts).
+ *
+ * Core OEE formula used everywhere below (factory-wide, per-day, per-group, per-machine):
+ *   Availability = (planned hours - unplanned downtime hours) / planned hours
+ *   Performance  = actual dozen produced / target (loaded) dozen   [capped at 100% if S.cap]
+ *   Quality      = good dozen / (good dozen + Grade B dozen)
+ *   OEE          = Availability * Performance * Quality
+ *
+ * "Planned hours" for a machine-day = S.hpd (24h) * its loaded capacity share (0-1, since a
+ * machine can be split across multiple orders/customers in one day). A machine with production
+ * but no loading row still gets counted as a full S.hpd, so its Performance/OEE aren't zeroed
+ * out by missing loading data.
+ */
+function compute(){
+ var p=$('#fPeriod').value;
+ var from,to;
+ var ref=$('#fDate').value?inpSerial('fDate'):DATA.maxD;
+ if(p==='Day'){from=ref;to=ref;}
+ else if(p==='Week'){var dw=new Date(Math.round((ref-25569)*86400000)); var diff=(dw.getUTCDay()-6+7)%7; from=ref-diff; to=from+6;}
+ else if(p==='Month'){var dm=new Date(Math.round((ref-25569)*86400000)); from=Math.floor(Date.UTC(dm.getUTCFullYear(),dm.getUTCMonth(),1)/86400000)+25569; to=Math.floor(Date.UTC(dm.getUTCFullYear(),dm.getUTCMonth()+1,0)/86400000)+25569;}
+ else if(p==='Custom'){from=$('#fFrom').value?inpSerial('fFrom'):DATA.minD; to=$('#fTo').value?inpSerial('fTo'):DATA.maxD;}
+ else{from=DATA.minD;to=DATA.maxD;}
+ if(to<from){var tmp=from;from=to;to=tmp;}
+ var fN=txt($('#fNeedle').value),fR=txt($('#fRoom').value),fC=txt($('#fCust').value),fM=txt($('#fMachine').value),fT=$('#fType').value;
+ // scopeFiltered: true when a machine-defining filter (Needle/Room/Machine/Type) is active —
+ // used to switch the "Total Machines" card between the whole-factory count and the
+ // filtered-scope count (scopeTotal below).
+ var scopeFiltered=!!(fN||fR||fM||fT);
+
+ var L=[],P=[],D=[],i,r;
+ for(i=0;i<DATA.load.length;i++){ r=DATA.load[i];
+  if(r.d>=from&&r.d<=to&&matchF(fN,r.nd||mNd(r.m))&&matchF(fR,r.rm||mRm(r.m))&&matchF(fC,r.cust)&&matchF(fM,r.m)&&matchF(fT,mTp(r.m)))L.push(r); }
+ for(i=0;i<DATA.prod.length;i++){ r=DATA.prod[i];
+  if(r.d>=from&&r.d<=to&&matchF(fN,r.nd||mNd(r.m))&&matchF(fR,r.rm||mRm(r.m))&&matchF(fC,r.cust)&&matchF(fM,r.m)&&matchF(fT,mTp(r.m)))P.push(r); }
+ for(i=0;i<DATA.dt.length;i++){ r=DATA.dt[i];
+  if(r.d>=from&&r.d<=to&&matchF(fN,mNd(r.m))&&matchF(fR,r.rm||mRm(r.m))&&matchF(fM,r.m)&&matchF(fT,mTp(r.m)))D.push(r); }
+
+ // scopeTotal: how many machines actually exist within the current Needle/Room/Machine/Type
+ // filter (regardless of period or whether they were loaded) — read from the master machine
+ // list (DATA.master), which is the authoritative "بيانات الماكينات" sheet. This is the
+ // denominator Utilization should use, NOT S.total, so that filtering to e.g. one room reports
+ // "X of the machines in that room", not "X of the whole factory's 498 machines".
+ // Customer (fC) is deliberately excluded here — a machine isn't "owned" by one customer.
+ var scopeTotal=0;
+ DATA.master.forEach(function(e,mm){
+  if(matchF(fN,e.nd)&&matchF(fR,e.rm)&&matchF(fT,e.tp)&&matchF(fM,mm))scopeTotal++;
+ });
+ if(!scopeTotal)scopeTotal=S.total; // safety net if the master list is empty/unmatched
+
+ // Step 1: collapse loading rows to one entry per (day, machine) — a machine can have several
+ // loading rows the same day (split across orders/customers), so sum their machine-share (mv)
+ // and cap the combined capacity at 1 (100% of that machine-day) even if the rows overstate it.
+ var rawM=new Map();
+ for(i=0;i<L.length;i++){ r=L[i]; var k=r.d+'|'+r.m; var o=rawM.get(k); if(!o){o={t:0,it:[]};rawM.set(k,o);} o.t+=r.mv; o.it.push(r); }
+ // LM: Map<"day|machine", {cap, q}> — cap = capacity share (0-1), q = total target dozen that day
+ // CON: Map<"day|machine", [{cust,qty,cv}]> — per-customer breakdown of that machine-day's capacity
+ var LM=new Map(),CON=new Map();
+ var totCap=0,totQty=0; var machSet=new Set();
+ rawM.forEach(function(o2,k2){
+  var sc=o2.t>1?1/o2.t:1;
+  var cap=Math.min(o2.t,1);
+  var q=0; var it=[];
+  for(var x=0;x<o2.it.length;x++){
+   var rr=o2.it[x]; var cv=rr.mv*sc; q+=rr.qty;
+   it.push({cust:rr.cust,qty:rr.qty,cv:cv});
+  }
+  CON.set(k2,it); LM.set(k2,{cap:cap,q:q});
+  totCap+=cap; totQty+=q; machSet.add(k2.split('|')[1]);
+ });
+
+ // Step 2: aggregate production by (day,machine), by customer, by needle, and by room.
+ var PM=new Map(),PC=new Map(),PN=new Map(),PR=new Map();
+ var tDz=0,tGB=0;
+ for(i=0;i<P.length;i++){ r=P[i];
+  addP(PM,r.d+'|'+r.m,r); addP(PC,r.cust||'(؟)',r); addP(PN,r.nd||mNd(r.m)||'(؟)',r); addP(PR,r.rm||mRm(r.m)||'(؟)',r);
+  tDz+=r.dz; tGB+=r.gb; }
+ var actF=tDz+tGB;
+
+ // Step 3: aggregate breakdowns by (day,machine), by cause label (DRz), by room (DRm), by
+ // machine (DMm). ld/le = lost dozen / lost EGP implied by that downtime, at the machine's
+ // standard rate (rate(m), dozen/hour). unp = hours that count as *unplanned* (pl flag off).
+ var DM=new Map(),DRz=new Map(),DRm=new Map(),DMm=new Map();
+ var tDT=0,tDTU=0,tLoss=0;
+ for(i=0;i<D.length;i++){ r=D[i];
+  var ld=r.dur*rate(r.m); var le=ld*S.egp;
+  var unp=r.pl?0:r.dur;
+  addD(DM,r.d+'|'+r.m,r.dur,unp,0,0);
+  addD(DRz,r.lb,r.dur,unp,ld,le);
+  addD(DRm,r.rm||mRm(r.m)||'(؟)',r.dur,unp,ld,le);
+  addD(DMm,r.m,r.dur,unp,ld,le);
+  tDT+=r.dur; tDTU+=unp; tLoss+=le; }
+
+ // Step 4: roll everything up per machine (across the whole selected period) into MS, then
+ // derive each machine's own Availability/Performance/Quality/OEE and a human status label
+ // (Running / Loaded-no-production / Breakdown-only / Idle) — used by the status donut chart,
+ // the heatmap's machine list, and the "worst producing machine" / "loaded, zero production" alerts.
+ var MS=new Map();
+ function gMS(m){ var o3=MS.get(m); if(!o3){o3={dz:0,gb:0,pl:0,dtT:0,dtU:0,cap:0,qty:0};MS.set(m,o3);} return o3; }
+ // BUGFIX: o3.qty (the loaded/target quantity per machine) was never accumulated here before,
+ // so every machine's Performance (pf below) and therefore its per-machine OEE always computed as 0.
+ // That silently broke "worst producing machine" alerts and any future per-machine OEE ranking.
+ LM.forEach(function(v,k3){ var m=k3.split('|')[1]; var o3=gMS(m); o3.cap+=v.cap; o3.pl+=S.hpd*v.cap; o3.qty+=v.q; });
+ PM.forEach(function(v,k3){ var m=k3.split('|')[1]; var o3=gMS(m); o3.dz+=v.dz; o3.gb+=v.gb; if(!LM.has(k3))o3.pl+=S.hpd; });
+ DM.forEach(function(v,k3){ var m=k3.split('|')[1]; var o3=gMS(m); o3.dtT+=v.t; o3.dtU+=v.u; });
+
+ var mArr=[];
+ MS.forEach(function(o3,m){
+  var rh=Math.max(0,o3.pl-o3.dtU);
+  var av=pct(rh,o3.pl);
+  var act=o3.dz+o3.gb;
+  var pf=pct(act,o3.qty);
+  var pc=S.cap?Math.min(1,pf):pf;
+  var ql=pct(o3.dz,act);
+  var oee=av*pc*ql;
+  var st;
+  if(o3.dz>0)st=o3.dtT>0?bi('تنتج + عطل','Running+DT'):bi('تنتج','Running');
+  else if(o3.cap>0)st=o3.dtT>0?bi('محملة + عطل','Loaded+DT'):bi('محملة بدون إنتاج','Loaded, No Prod.');
+  else if(o3.dtT>0)st=bi('عطل فقط','Breakdown Only');
+  else st=bi('خاملة','Idle');
+  mArr.push({m:m,o:o3,st:st,oee:oee});
+ });
+
+ var plH=0,runH=0;
+ for(i=0;i<mArr.length;i++){ plH+=mArr[i].o.pl; runH+=Math.max(0,mArr[i].o.pl-mArr[i].o.dtU); }
+ var avF=pct(runH,plH);
+ var pfF=pct(actF,totQty); var pfFC=S.cap?Math.min(1,pfF):pfF;
+ var qlF=pct(tDz,actF);
+ var oeeF=avF*pfFC*qlF;
+ var achF=pct(actF,totQty);
+ var utilM=pct(machSet.size,scopeTotal);
+
+ var DD=new Map(),dayMach=new Map();
+ function gD(d){ var o4=DD.get(d); if(!o4){o4={pl:0,dtT:0,dtU:0,dz:0,gb:0,cap:0,loss:0,ld:0,tg:0};DD.set(d,o4);} return o4; }
+ function gDM(d,m){ var mm=dayMach.get(d); if(!mm){mm=new Map();dayMach.set(d,mm);} var o5=mm.get(m); if(!o5){o5={pl:0,u:0};mm.set(m,o5);} return o5; }
+ LM.forEach(function(v,k4){ var p2=k4.split('|'); var d=+p2[0]; var m=p2[1]; var o4=gD(d);
+  o4.pl+=S.hpd*v.cap; o4.cap+=v.cap; o4.ld=(o4.ld||0)+1; o4.tg+=v.q; gDM(d,m).pl+=S.hpd*v.cap; });
+ PM.forEach(function(v,k4){ var p2=k4.split('|'); var d=+p2[0]; var m=p2[1]; var o4=gD(d);
+  o4.dz+=v.dz; o4.gb+=v.gb;
+  if(!LM.has(k4)){ o4.pl+=S.hpd; gDM(d,m).pl+=S.hpd; } });
+ DM.forEach(function(v,k4){ var p2=k4.split('|'); var d=+p2[0]; var m=p2[1]; var o4=gD(d);
+  o4.dtT+=v.t; o4.dtU+=v.u; o4.loss+=v.t*rate(m)*S.egp; gDM(d,m).u+=v.u; });
+
+ var present=Array.from(DD.keys()).sort(function(a,b){return a-b;});
+ var daily=[];
+ for(i=0;i<present.length;i++){
+  var d5=present[i]; var o6=DD.get(d5);
+  var th=0; var mm2=dayMach.get(d5);
+  if(mm2)mm2.forEach(function(vv,m6){ th+=rate(m6)*Math.max(0,vv.pl-vv.u); });
+  var rh2=Math.max(0,o6.pl-o6.dtU);
+  var av2=pct(rh2,o6.pl);
+  var act2=o6.dz+o6.gb;
+  var pf2=S.cap?Math.min(1,pct(act2,o6.tg)):pct(act2,o6.tg);
+  var ql2=pct(o6.dz,act2);
+  daily.push({d:d5,target:o6.tg,actual:act2,oee:av2*pf2*ql2,av:av2,perf:pf2,qual:ql2,dt:o6.dtT,loss:o6.loss||0,util:o6.cap/scopeTotal,ld:o6.ld||0});
+ }
+ var nDays=daily.length||1;
+ var avgLoad=0; for(i=0;i<daily.length;i++)avgLoad+=daily[i].ld; avgLoad/=nDays;
+
+ var bPerDay=new Map();
+ DM.forEach(function(v,k5){ var d=+k5.split('|')[0]; bPerDay.set(d,(bPerDay.get(d)||0)+1); });
+ var sumB=0; for(i=0;i<daily.length;i++)sumB+=(bPerDay.get(daily[i].d)||0);
+ var avgBdown=sumB/nDays;
+ // avgBdownH: average TOTAL breakdown hours per day (all machines combined, planned+unplanned)
+ // — a counterpart to avgBdown (which counts *how many machines* broke down per day, not for
+ // how long). Both are already scoped to the active filter, since tDT/daily[].dt are built
+ // from D, which is filtered by Needle/Room/Machine/Type same as everything else in compute().
+ var avgBdownH=tDT/nDays;
+
+ var par=[];
+ DRz.forEach(function(v,k6){ par.push({lb:k6,h:v.t,dz:v.ld,egp:v.le}); });
+ par.sort(function(a,b){return b.h-a.h;});
+ var cum=0;
+ for(i=0;i<par.length;i++){ par[i].pct=pct(par[i].h,tDT); cum+=par[i].pct; par[i].cum=cum; }
+
+ var needles=groupTable('Needle',LM,CON,PM,DM,PC);
+ var rooms=groupTable('Room',LM,CON,PM,DM,PC);
+ var custs=groupTable('Cust',LM,CON,PM,DM,PC);
+ var lossRooms=[]; DRm.forEach(function(v,k7){ lossRooms.push({k:k7,h:v.t,dz:v.ld,egp:v.le}); });
+ lossRooms.sort(function(a,b){return b.egp-a.egp;});
+ var topLoss=[]; DMm.forEach(function(v,k7){ topLoss.push({k:k7,h:v.t,egp:v.le}); });
+ topLoss.sort(function(a,b){return b.egp-a.egp;}); topLoss=topLoss.slice(0,5);
+ var stCount={}; for(i=0;i<mArr.length;i++)stCount[mArr[i].st]=(stCount[mArr[i].st]||0)+1;
+
+ var hM=mArr.filter(function(x){return x.o.dz>0||x.o.cap>0;}).sort(function(a,b){return (+a.m)-(+b.m);}).slice(0,60).map(function(x){return x.m;});
+ var hD=present.slice(-31);
+ var heat=hM.map(function(m7){
+  return hD.map(function(d7){
+   var k8=d7+'|'+m7;
+   var lm=LM.get(k8); var pm=PM.get(k8);
+   if(!lm&&!pm)return null;
+   if(lm&&lm.q>0)return pct(pm?(pm.dz+pm.gb):0,lm.q);
+   return null;
+  });
+ });
+
+ var alerts=[],good=[],warn=[],crit=[];
+ if(rooms.length){var wr=rooms.slice().sort(function(a,b){return a.oee-b.oee;})[0]; alerts.push(bi('أسوأ طرقة بالـ OEE','Worst room by OEE')+': '+wr.k+' ('+fp(wr.oee)+')');}
+ if(needles.length){var wn=needles.slice().sort(function(a,b){return a.oee-b.oee;})[0]; alerts.push(bi('أسوأ إبرة','Worst needle')+': '+wn.k+' ('+fp(wn.oee)+')');}
+ var prodM=mArr.filter(function(x){return x.o.dz>0;});
+ if(prodM.length){var wm=prodM.slice().sort(function(a,b){return a.oee-b.oee;})[0]; alerts.push(bi('أسوأ ماكينة منتجة','Worst producing machine')+': '+wm.m+' ('+fp(wm.oee)+')');}
+ if(par.length)alerts.push(bi('أكبر سبب توقف','Top downtime cause')+': '+par[0].lb+' ('+f1(par[0].h)+bi(' س','h')+')');
+ if(topLoss.length)alerts.push(bi('أعلى خسارة مالية','Highest loss')+': '+bi('ماكينة','machine')+' '+topLoss[0].k+' ('+f0(topLoss[0].egp)+bi(' ج',' EGP')+')');
+ if(custs.length)alerts.push(bi('أكبر مستهلك طاقة','Largest capacity consumer')+': '+custs[0].k+' ('+f1(custs[0].cap)+bi(' ماكينة',' mach.')+')');
+ var zero=mArr.filter(function(x){return x.o.cap>0&&x.o.dz===0;});
+ if(zero.length){
+  var names='';
+  for(i=0;i<Math.min(6,zero.length);i++)names+=zero[i].m+'، ';
+  alerts.push(bi('محملة بدون إنتاج','Loaded, zero production')+': '+zero.length+' '+bi('ماكينة','machines')+' ('+names+')');
+ }
+ var exDT=mArr.filter(function(x){return x.o.dtT>S.maxDT;});
+ if(exDT.length)alerts.push(bi('توقف مفرط','Excessive downtime')+' (> '+S.maxDT+bi(' س','h')+'): '+exDT.length+' '+bi('ماكينة','machines'));
+ alerts.push(bi('متوسط المحملة يوميًا','Avg loaded/day')+': '+f1(avgLoad)+' • '+bi('المعطلة يوميًا','Avg breakdown/day')+': '+f1(avgBdown));
+ if(achF>=S.goodAch)good.push(bi('تحقيق','Achievement')+' '+fp(achF)+' '+bi('فوق المستهدف','above target'));
+ if(oeeF>=S.goodOEE)good.push(bi('OEE ممتاز','Excellent OEE')+': '+fp(oeeF));
+ if(utilM>=S.goodUtil)good.push(bi('استغلال طاقة','Utilization')+' '+fp(utilM)+' ('+machSet.size+' '+bi('من','of')+' '+scopeTotal+' '+bi('ماكينة','machines')+')');
+ if(!good.length)good.push('—');
+ if(achF>=S.warnAch&&achF<S.goodAch)warn.push(bi('التحقيق','Achievement')+' '+fp(achF)+' '+bi('تحت المستهدف','below target'));
+ if(oeeF>=S.warnOEE&&oeeF<S.goodOEE)warn.push(bi('OEE تحت المستهدف','OEE below target')+': '+fp(oeeF));
+ if(tDT>0)warn.push(f1(tDT)+' '+bi('ساعة توقف مسجلة','downtime hours recorded'));
+ if(zero.length)warn.push(zero.length+' '+bi('ماكينة محملة بدون إنتاج','loaded machines with no production'));
+ if(!warn.length)warn.push('—');
+ if(oeeF<S.warnOEE)crit.push(bi('OEE حرج','Critical OEE')+': '+fp(oeeF));
+ if(achF<S.warnAch)crit.push(bi('تحقيق حرج','Critical achievement')+': '+fp(achF));
+ if(tLoss>5000)crit.push(bi('خسائر أعطال','Breakdown losses')+' '+f0(tLoss)+bi(' ج',' EGP'));
+ if(!crit.length)crit.push('—');
+
+ return {from:from,to:to,counts:{L:L.length,P:P.length,D:D.length},totCap:totCap,totQty:totQty,machUniq:machSet.size,utilM:utilM,scopeTotal:scopeTotal,scopeFiltered:scopeFiltered,
+  tDz:tDz,tGB:tGB,actF:actF,tgG:totQty,achF:achF,avF:avF,pfF:pfF,pfFC:pfFC,qlF:qlF,oeeF:oeeF,tDT:tDT,tDTU:tDTU,tLoss:tLoss,
+  daily:daily,par:par,needles:needles,rooms:rooms,custs:custs,lossRooms:lossRooms,topLoss:topLoss,stCount:stCount,
+  heatM:hM,heatD:hD,heat:heat,alerts:alerts,good:good,warn:warn,crit:crit,mArr:mArr,avgLoad:avgLoad,avgBdown:avgBdown,avgBdownH:avgBdownH};
+}
+
+/* ===== Render ===== */
+function countUp(el,val,fmt){
+ var t0=performance.now(),dur=1000;
+ function st(t){ var p=Math.min(1,(t-t0)/dur); var e=1-Math.pow(1-p,3); el.textContent=fmt(val*e); if(p<1)requestAnimationFrame(st); }
+ requestAnimationFrame(st);
+}
+function card(t,v,s,fmt,color,barPct){
+ var h='<div class="kpi"><div class="t">'+t+'</div>';
+ h+='<div class="v" style="color:'+color+'" data-v="'+v+'" data-f="'+fmt+'">0</div>';
+ h+='<div class="s">'+s+'</div>';
+ if(barPct!=null)h+='<div class="bar"><i data-w="'+Math.min(100,barPct*100)+'" style="background:'+color+'"></i></div>';
+ h+='</div>';
+ return h;
+}
+function heatCol(v){
+ var x=Math.max(0,Math.min(1,v)); var r,g,b;
+ if(x<0.5){var t=x/0.5; r=248+7*t; g=105+130*t; b=107+25*t;}
+ else{var t2=(x-0.5)/0.5; r=255-156*t2; g=235-45*t2; b=132-9*t2;}
+ return 'rgb('+Math.round(r)+','+Math.round(g)+','+Math.round(b)+')';
+}
+function mkChart(id,type,labs,ds,pctAxis,dual){
+ var scales={y:pctAxis?{ticks:{color:'#9aa7ba',callback:function(v){return v+'%';}},grid:{color:'rgba(255,255,255,.06)'}}:{ticks:{color:'#9aa7ba'},grid:{color:'rgba(255,255,255,.06)'}}};
+ if(dual)scales.y2={position:'left',ticks:{color:'#f6c453'},grid:{drawOnChartArea:false}};
+ CH[id]=new Chart($('#'+id),{type:type,data:{labels:labs,datasets:ds},options:{responsive:true,
+  animation:{duration:1100,easing:'easeOutQuart'},
+  plugins:{legend:{labels:{color:'#eef2f7',font:{family:'Tajawal'}}}},
+  scales:scales}});
+}
+
+function buildReport(R){
+ var P=[];
+ var head='<div class="rhead"><h2>SOLO — '+bi('تقرير تشغيل قسم التريكو','Knitting Dept. Operations Report')+' — '+DATA.name+'</h2>';
+ head+='<div class="rmeta">'+bi('الفترة','Period')+': '+dFull(R.from)+' → '+dFull(R.to)+' | '+bi('أيام شغل','working days')+': '+R.daily.length+' | '+bi('تحميل','loading')+': '+R.counts.L+' | '+bi('إنتاج','production')+': '+R.counts.P+' | '+bi('أعطال','breakdowns')+': '+R.counts.D+'</div>';
+ head+='<div class="rmeta" style="direction:ltr">Developed by Eng. Adel Essam — Planning &amp; IE Dept.</div></div>';
+ P.push(head);
+
+ var h1=[bi('المؤشر','Metric'),bi('القيمة','Value'),bi('المؤشر','Metric'),bi('القيمة','Value')];
+ var r1=[];
+ r1.push([bi('إجمالي الماكينات','Total Machines'),R.scopeTotal,bi('ماكينات محملة','Loaded Machines'),R.machUniq]);
+ r1.push([bi('استغلال الطاقة','Utilization'),fp(R.utilM),bi('متوسط المحملة/يوم','Avg Loaded/day'),f1(R.avgLoad)]);
+ r1.push([bi('متوسط المعطلة/يوم','Avg Breakdown/day'),f1(R.avgBdown),bi('المستهدف = المحمل','Target=Loaded'),f1(R.tgG)]);
+ r1.push([bi('متوسط ساعات العطل/يوم','Avg Breakdown Hours/day'),f1(R.avgBdownH),'','']);
+ r1.push([bi('الإنتاج الفعلي','Actual (doz)'),f1(R.actF),bi('منها درجة 2','of which Grade B'),f1(R.tGB)]);
+ r1.push([bi('التحقيق','Achievement'),fp(R.achF),bi('التوافر','Availability'),fp(R.avF)]);
+ r1.push([bi('الأداء','Performance'),fp(R.pfFC),bi('الجودة','Quality'),fp(R.qlF)]);
+ r1.push(['OEE',fp(R.oeeF),bi('ساعات التوقف','Downtime h'),f1(R.tDT)]);
+ r1.push([bi('خسائر الأعطال','Losses (EGP)'),f0(R.tLoss),'','']);
+ P.push(xlT(bi('1) ملخص المؤشرات','1) KPIs Summary'),h1,r1));
+
+ var sT=sumBy(R.daily,function(x){return x.target;}), sA=sumBy(R.daily,function(x){return x.actual;});
+ var sD=sumBy(R.daily,function(x){return x.dt;}), sL=sumBy(R.daily,function(x){return x.loss;});
+ var h2=[bi('التاريخ','Date'),bi('مستهدف','Target'),bi('فعلي','Actual'),bi('تحقيق','Ach%'),bi('توافر','Avail%'),bi('أداء','Perf%'),bi('جودة','Qual%'),'OEE',bi('توقف','DT h'),bi('خسارة','Loss EGP')];
+ var r2=R.daily.map(function(x){return [dFull(x.d),f1(x.target),f1(x.actual),fp(pct(x.actual,x.target)),fp(x.av),fp(x.perf),fp(x.qual),fp(x.oee),f1(x.dt),f0(x.loss)];});
+ var t2=[bi('الإجمالي','TOTAL'),f1(sT),f1(sA),fp(pct(sA,sT)),fp(R.avF),fp(R.pfFC),fp(R.qlF),fp(R.oeeF),f1(sD),f0(sL)];
+ P.push(xlT(bi('2) الأداء اليومي','2) Daily Performance'),h2,r2,t2));
+
+ var h3=[bi('إبرة','Needle'),bi('ماكينات','Machines'),bi('محمل','Loaded'),bi('فعلي','Actual'),bi('تحقيق','Ach%'),bi('توقف','DT h'),'OEE'];
+ var r3=R.needles.map(function(x){return [x.k,x.uniq,f1(x.target),f1(x.dz),fp(x.ach),f1(x.dt),fp(x.oee)];});
+ var nT=gTotals(R.needles);
+ var t3=[bi('الإجمالي','TOTAL'),nT.m,f1(nT.tg),f1(nT.dz),fp(pct(nT.dz,nT.tg)),f1(nT.dt),fp(nT.oee)];
+ P.push(xlT(bi('3) حسب الإبرة','3) By Needle'),h3,r3,t3));
+
+ var r4=R.rooms.map(function(x){return [x.k,x.uniq,f1(x.target),f1(x.dz),fp(x.ach),f1(x.dt),fp(x.oee)];});
+ var rT=gTotals(R.rooms);
+ var t4=[bi('الإجمالي','TOTAL'),rT.m,f1(rT.tg),f1(rT.dz),fp(pct(rT.dz,rT.tg)),f1(rT.dt),fp(rT.oee)];
+ P.push(xlT(bi('4) حسب الطرقة','4) By Room'),h3,r4,t4));
+
+ var h5=[bi('عميل','Customer'),bi('ماكينات','Machines'),bi('محمل','Loaded'),bi('فعلي','Actual'),bi('تحقيق','Ach%'),'OEE'];
+ var r5=R.custs.map(function(x){return [x.k,x.uniq,f1(x.target),f1(x.dz),fp(x.ach),fp(x.oee)];});
+ var cT=gTotals(R.custs);
+ var t5=[bi('الإجمالي','TOTAL'),cT.m,f1(cT.tg),f1(cT.dz),fp(pct(cT.dz,cT.tg)),fp(cT.oee)];
+ P.push(xlT(bi('5) العملاء','5) Customers'),h5,r5,t5));
+
+ var h6=[bi('الحالة','Status'),bi('عدد','Count')];
+ var r6=[]; for(var k in R.stCount)r6.push([k,R.stCount[k]]);
+ P.push(xlT(bi('6) حالة الماكينات','6) Machine Status'),h6,r6));
+
+ var h7=[bi('السبب','Cause'),bi('ساعات','Hours'),'%',bi('تراكمي','Cum%'),bi('دستة ضائعة','Lost doz'),bi('خسارة','Loss EGP')];
+ var r7=R.par.map(function(x){return [x.lb,f1(x.h),fp(x.pct),fp(x.cum),f1(x.dz),f0(x.egp)];});
+ var t7=[bi('الإجمالي','TOTAL'),f1(sumBy(R.par,function(x){return x.h;})),'100.0%','—',f1(sumBy(R.par,function(x){return x.dz;})),f0(sumBy(R.par,function(x){return x.egp;}))];
+ P.push(xlT(bi('7) باريتو الأعطال','7) Breakdown Pareto'),h7,r7,t7));
+
+ var h8=[bi('طرقة','Room'),bi('ساعات','Hours'),bi('دستة ضائعة','Lost doz'),bi('خسارة','Loss EGP')];
+ var r8=R.lossRooms.map(function(x){return [x.k,f1(x.h),f1(x.dz),f0(x.egp)];});
+ var t8=[bi('الإجمالي','TOTAL'),f1(sumBy(R.lossRooms,function(x){return x.h;})),f1(sumBy(R.lossRooms,function(x){return x.dz;})),f0(sumBy(R.lossRooms,function(x){return x.egp;}))];
+ P.push(xlT(bi('8) خسائر حسب الطرقة','8) Losses by Room'),h8,r8,t8));
+
+ var h9=[bi('ماكينة','Machine'),bi('ساعات','Hours'),bi('خسارة','Loss EGP')];
+ var r9=R.topLoss.map(function(x){return [x.k,f1(x.h),f0(x.egp)];});
+ var t9=[bi('الإجمالي','TOTAL'),f1(sumBy(R.topLoss,function(x){return x.h;})),f0(sumBy(R.topLoss,function(x){return x.egp;}))];
+ P.push(xlT(bi('9) أعلى 5 ماكينات خسارة','9) Top 5 Loss Machines'),h9,r9,t9));
+
+ var mx=Math.max(R.good.length,R.warn.length,R.crit.length);
+ var r10=[];
+ for(var i=0;i<mx;i++)r10.push([R.good[i]||'—',R.warn[i]||'—',R.crit[i]||'—']);
+ P.push(xlT(bi('10) الملخص الإداري','10) Management Summary'),[bi('جيد','GOOD'),bi('تحذير','WARNING'),bi('حرج','CRITICAL')],r10));
+
+ var r11=R.alerts.map(function(a,i){return [i+1,a];});
+ P.push(xlT(bi('11) أهم التنبيهات','11) Key Alerts'),['#',bi('التنبيه','Alert')],r11));
+
+ $('#report').innerHTML=P.join('');
+}
+function printReport(){
+ if(!LASTR){alert(bi('ارفع ملف الإكسيل الأول','Upload the Excel file first'));return;}
+ buildReport(LASTR);
+ document.body.classList.add('report-mode');
+ var clean=function(){ document.body.classList.remove('report-mode'); window.removeEventListener('afterprint',clean); };
+ window.addEventListener('afterprint',clean);
+ setTimeout(function(){ window.print(); },120);
+}
+
+function render(R){
+ LASTR=R;
+ $('#drop').classList.add('hidden');
+ var ids=['filtersBar','kpiWrap','chartsTop','tablesGrid','sumWrap','scopeInfo'];
+ for(var i=0;i<ids.length;i++){ var el=$('#'+ids[i]); if(el)el.classList.remove('hidden'); }
+ $('#scopeInfo').textContent='📅 '+bi('الفترة','Period')+': '+dFull(R.from)+' → '+dFull(R.to)+'  •  '+bi('أيام شغل','working days')+': '+R.daily.length+'  •  '+bi('صفوف','rows')+': '+R.counts.L+' / '+R.counts.P+' / '+R.counts.D;
+ var kc=function(x){ return x>=1?'var(--te)':x>=.8?'var(--am)':'var(--rd)'; };
+ var kh='';
+ kh+=card(bi('إجمالي الماكينات','Total Machines'),R.scopeTotal,R.scopeFiltered?bi('نطاق الفلتر الحالي','Current filter scope'):bi('إعدادات المصنع','Factory settings'),'f0','var(--cy)');
+ kh+=card(bi('ماكينات محملة','Loaded Machines'),R.machUniq,bi('طاقة','Capacity')+' '+f1(R.totCap),'f0','var(--bl)');
+ kh+=card(bi('استغلال الطاقة','Utilization'),R.utilM,R.machUniq+' '+bi('من','of')+' '+R.scopeTotal+' '+bi('ماكينة','machines'),'fp',kc(R.utilM/S.goodUtil),R.utilM);
+ kh+=card(bi('متوسط المعطلة/يوم','Avg Breakdown/day'),R.avgBdown,bi('ماكينة عطلت يوميًا','machines/day'),'f1',R.avgBdown>0?'var(--am)':'var(--te)');
+ kh+=card(bi('متوسط ساعات العطل/يوم','Avg Breakdown Hours/day'),R.avgBdownH,bi('ساعة عطل يوميًا','hours/day'),'f1',R.avgBdownH>0?'var(--am)':'var(--te)');
+ kh+=card(bi('متوسط المحملة/يوم','Avg Loaded/day'),R.avgLoad,bi('خلال الفترة','over period'),'f1','var(--bl)');
+ kh+=card(bi('الإنتاج الفعلي','Actual Production'),R.actF,bi('دستة (جيد + درجة 2)','doz (Good+Grade B)'),'f1','var(--te)');
+ kh+=card(bi('المستهدف','Target'),R.tgG,bi('دستة (الكمية المحملة)','doz (Loaded qty)'),'f1','var(--txt)');
+ kh+=card(bi('التحقيق','Achievement'),R.achF,bi('فعلي / مستهدف','Actual / Target'),'fp',kc(R.achF/S.goodAch),R.achF);
+ kh+=card('OEE',R.oeeF,bi('خام','Raw')+' '+fp(R.avF*R.pfF*R.qlF),'fp',kc(R.oeeF/S.goodOEE),R.oeeF);
+ kh+=card(bi('خسائر الأعطال','Breakdown Losses'),R.tLoss,bi('جنيه','EGP')+' • '+f1(R.tDT)+bi(' س','h'),'f0',R.tLoss?'var(--rd)':'var(--te)');
+ $('#kpiRow').innerHTML=kh;
+ requestAnimationFrame(function(){
+  var vs=document.querySelectorAll('.kpi .v');
+  for(var i=0;i<vs.length;i++){
+   var v=+vs[i].getAttribute('data-v'); var f=vs[i].getAttribute('data-f');
+   countUp(vs[i],v,f==='fp'?(function(x){return fp(x);}):f==='f1'?f1:f0);
+  }
+  var bars=document.querySelectorAll('.kpi .bar i');
+  for(var b=0;b<bars.length;b++){ (function(el){ setTimeout(function(){ el.style.width=el.getAttribute('data-w')+'%'; },80); })(bars[b]); }
+ });
+
+ for(var c in CH){ if(CH[c])CH[c].destroy(); }
+ CH={};
+ if(window.Chart){
+  var labs=R.daily.map(function(x){return dLabel(x.d);});
+  mkChart('chProd','line',labs,[
+   {label:bi('مستهدف (محمل)','Target (Loaded)'),data:R.daily.map(function(x){return +x.target.toFixed(1);}),borderColor:'#7cb8ff',backgroundColor:'rgba(124,184,255,.15)',fill:true,tension:.35},
+   {label:bi('فعلي (+درجة2)','Actual (+Grade B)'),data:R.daily.map(function(x){return +x.actual.toFixed(1);}),borderColor:'#34d399',backgroundColor:'rgba(52,211,153,.15)',fill:true,tension:.35}]);
+  mkChart('chOEE','line',labs,[{label:'OEE %',data:R.daily.map(function(x){return +(x.oee*100).toFixed(1);}),borderColor:'#f6c453',backgroundColor:'rgba(246,196,83,.18)',fill:true,tension:.35}],true);
+  mkChart('chAPQ','line',labs,[
+   {label:bi('توافر','Availability'),data:R.daily.map(function(x){return +(x.av*100).toFixed(1);}),borderColor:'#34d399',tension:.3},
+   {label:bi('أداء','Performance'),data:R.daily.map(function(x){return +(x.perf*100).toFixed(1);}),borderColor:'#fb923c',tension:.3},
+   {label:bi('جودة','Quality'),data:R.daily.map(function(x){return +(x.qual*100).toFixed(1);}),borderColor:'#7cb8ff',tension:.3}],true);
+  mkChart('chDT','bar',labs,[
+   {label:bi('ساعات توقف','Downtime h'),data:R.daily.map(function(x){return +x.dt.toFixed(1);}),backgroundColor:'rgba(248,113,113,.55)',yAxisID:'y'},
+   {label:bi('خسارة (ج)','Loss (EGP)'),data:R.daily.map(function(x){return Math.round(x.loss);}),type:'line',borderColor:'#f6c453',yAxisID:'y2'}],false,true);
+  mkChart('chPar','bar',R.par.slice(0,10).map(function(x){return x.lb;}),[
+   {label:bi('ساعات','Hours'),data:R.par.slice(0,10).map(function(x){return +x.h.toFixed(1);}),backgroundColor:'rgba(124,184,255,.55)',yAxisID:'y'},
+   {label:bi('تراكمي %','Cum %'),data:R.par.slice(0,10).map(function(x){return +(x.cum*100).toFixed(1);}),type:'line',borderColor:'#f87171',yAxisID:'y2'}],false,true);
+  var stL=[],stV=[];
+  for(var s in R.stCount){ stL.push(s); stV.push(R.stCount[s]); }
+  mkChart('chStatus','doughnut',stL,[{data:stV,backgroundColor:['#34d399','#f6c453','#fb923c','#f87171','#7cb8ff','#94a3b8']}]);
+ }
+
+ var nT=gTotals(R.needles), rT=gTotals(R.rooms), cT=gTotals(R.custs);
+ $('#tNeedle').innerHTML=tbl(
+  [bi('إبرة','Needle'),bi('ماكينات','Machines'),bi('محمل','Loaded'),bi('فعلي','Actual'),bi('تحقيق','Ach%'),bi('توقف','DT h'),'OEE'],
+  R.needles.map(function(x){return [x.k,x.uniq,f1(x.target),f1(x.dz),fp(x.ach),f1(x.dt),fp(x.oee)];}),
+  [bi('الإجمالي','TOTAL'),nT.m,f1(nT.tg),f1(nT.dz),fp(pct(nT.dz,nT.tg)),f1(nT.dt),fp(nT.oee)]);
+ $('#tRoom').innerHTML=tbl(
+  [bi('طرقة','Room'),bi('ماكينات','Machines'),bi('محمل','Loaded'),bi('فعلي','Actual'),bi('تحقيق','Ach%'),bi('توقف','DT h'),'OEE'],
+  R.rooms.map(function(x){return [x.k,x.uniq,f1(x.target),f1(x.dz),fp(x.ach),f1(x.dt),fp(x.oee)];}),
+  [bi('الإجمالي','TOTAL'),rT.m,f1(rT.tg),f1(rT.dz),fp(pct(rT.dz,rT.tg)),f1(rT.dt),fp(rT.oee)]);
+ $('#tCust').innerHTML=tbl(
+  [bi('عميل','Customer'),bi('ماكينات','Machines'),bi('محمل','Loaded'),bi('فعلي','Actual'),bi('تحقيق','Ach%'),'OEE'],
+  R.custs.map(function(x){return [x.k,x.uniq,f1(x.target),f1(x.dz),fp(x.ach),fp(x.oee)];}),
+  [bi('الإجمالي','TOTAL'),cT.m,f1(cT.tg),f1(cT.dz),fp(pct(cT.dz,cT.tg)),fp(cT.oee)]);
+ $('#tLossRoom').innerHTML=tbl(
+  [bi('طرقة','Room'),bi('ساعات','Hours'),bi('دستة ضائعة','Lost doz'),bi('خسارة','Loss EGP')],
+  R.lossRooms.map(function(x){return [x.k,f1(x.h),f1(x.dz),'<span class="crit">'+f0(x.egp)+'</span>'];}),
+  [bi('الإجمالي','TOTAL'),f1(sumBy(R.lossRooms,function(x){return x.h;})),f1(sumBy(R.lossRooms,function(x){return x.dz;})),f0(sumBy(R.lossRooms,function(x){return x.egp;}))]);
+ $('#tTopLoss').innerHTML=tbl(
+  [bi('ماكينة','Machine'),bi('ساعات','Hours'),bi('خسارة','Loss EGP')],
+  R.topLoss.map(function(x){return [x.k,f1(x.h),'<span class="crit">'+f0(x.egp)+'</span>'];}),
+  [bi('الإجمالي','TOTAL'),f1(sumBy(R.topLoss,function(x){return x.h;})),f0(sumBy(R.topLoss,function(x){return x.egp;}))]);
+ $('#tPareto').innerHTML=tbl(
+  [bi('السبب','Cause'),bi('ساعات','Hours'),'%',bi('تراكمي','Cum%'),bi('خسارة','Loss EGP')],
+  R.par.slice(0,12).map(function(x){return [x.lb,f1(x.h),fp(x.pct),fp(x.cum),f0(x.egp)];}),
+  [bi('الإجمالي','TOTAL'),f1(sumBy(R.par,function(x){return x.h;})),'100.0%','—',f0(sumBy(R.par,function(x){return x.egp;}))]);
+
+ var hh='<table id="heat"><tr><th>'+bi('ماكينة','Machine')+'</th>';
+ for(var d=0;d<R.heatD.length;d++)hh+='<th>'+dLabel(R.heatD[d])+'</th>';
+ hh+='</tr>';
+ for(var m=0;m<R.heatM.length;m++){
+  hh+='<tr><td style="background:#1a2740;color:var(--cy)">'+R.heatM[m]+'</td>';
+  for(var cc=0;cc<R.heat[m].length;cc++){
+   var v=R.heat[m][cc];
+   if(v==null)hh+='<td style="background:#1a2740"></td>';
+   else hh+='<td style="background:'+heatCol(v)+'">'+Math.round(v*100)+'</td>';
+  }
+  hh+='</tr>';
+ }
+ hh+='</table>';
+ $('#heat').innerHTML=hh;
+
+ var sm='';
+ sm+='<div class="box g"><h4 class="good">✅ '+bi('جيد','GOOD')+'</h4><ul>';
+ for(i=0;i<R.good.length;i++)sm+='<li>• '+R.good[i]+'</li>';
+ sm+='</ul></div>';
+ sm+='<div class="box w"><h4 class="warn">⚠️ '+bi('تحذير','WARNING')+'</h4><ul>';
+ for(i=0;i<R.warn.length;i++)sm+='<li>• '+R.warn[i]+'</li>';
+ sm+='</ul></div>';
+ sm+='<div class="box c"><h4 class="crit pulse">🚨 '+bi('حرج','CRITICAL')+'</h4><ul>';
+ for(i=0;i<R.crit.length;i++)sm+='<li>• '+R.crit[i]+'</li>';
+ sm+='</ul></div>';
+ sm+='<div class="box" style="background:rgba(124,184,255,.08)"><h4 style="color:var(--bl)">📌 '+bi('أهم التنبيهات','Key Alerts')+'</h4><ul>';
+ for(i=0;i<R.alerts.length;i++)sm+='<li>• '+R.alerts[i]+'</li>';
+ sm+='</ul></div>';
+ $('#sumRow').innerHTML=sm;
+}
+
+/* ===== Run ===== */
+function refresh(){ if(!DATA.load.length&&!DATA.prod.length&&!DATA.dt.length)return; render(compute()); }
+function handleFile(f){
+ if(!f)return;
+ if(typeof XLSX==='undefined'){alert(bi('مكتبة الإكسيل مش محملة — تأكد من الإنترنت','Excel library not loaded — check internet'));return;}
+ $('#overlay').classList.add('on');
+ var r=new FileReader();
+ r.onload=function(e){
+  try{
+   var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+   parseAll(wb);
+   populateFilters();
+   DATA.name=f.name;
+   $('#fname').textContent='📄 '+f.name;
+   setTimeout(function(){ try{refresh();}catch(err){showErr2(err);} $('#overlay').classList.remove('on'); },60);
+  }catch(err){ showErr2(err); $('#overlay').classList.remove('on'); }
+ };
+ r.readAsArrayBuffer(f);
+}
+function showErr2(err){ var b=document.getElementById('errBanner'); if(b){b.style.display='block'; b.textContent='⚠️ '+err.message;} }
+var dzEl=$('#drop');
+['dragover','dragenter'].forEach(function(ev){ dzEl.addEventListener(ev,function(e){ e.preventDefault(); dzEl.classList.add('over'); }); });
+['dragleave','drop'].forEach(function(ev){ dzEl.addEventListener(ev,function(e){ e.preventDefault(); dzEl.classList.remove('over'); if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0]); }); });
+document.addEventListener('change',function(e){ if(e.target.closest('#filtersBar')){ try{refresh(); }catch(err){ showErr2(err); } } });
+function openSettings(){ $('#settings').classList.add('open'); }
+function closeSettings(){ $('#settings').classList.remove('open'); }
+function applySettings(){
+ S.total=+$('#sTotal').value||498;
+ S.sc=+$('#sSC').value||20;
+ S.dc=+$('#sDC').value||10;
+ S.egp=+$('#sEGP').value||150;
+ closeSettings();
+ try{refresh();}catch(err){showErr2(err);}
+}
+</script>
+</body>
+</html>
