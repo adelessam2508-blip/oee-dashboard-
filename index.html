@@ -1127,43 +1127,54 @@ function applySettings(){
 }
 </script>
  <script>
-// تحميل ملف Excel أوتوماتيك من نفس المجلد
-window.addEventListener('DOMContentLoaded', function() {
+// تحميل ملف Excel أوتوماتيك لما الصفحة تفتح
+window.addEventListener('DOMContentLoaded', async function() {
     console.log('جاري تحميل ملف OEE8.xlsx أوتوماتيك...');
     
-    fetch('./OEE8.xlsx')
-        .then(response => {
-            if (!response.ok) throw new Error('فشل تحميل الملف');
-            return response.arrayBuffer();
-        })
-        .then(arrayBuffer => {
-            console.log('تم تحميل الملف بنجاح، جاري التحليل...');
+    try {
+        // جلب ملف Excel من نفس المجلد
+        const response = await fetch('./OEE8.xlsx');
+        
+        if (!response.ok) {
+            throw new Error('فشل تحميل الملف - تأكد من وجود OEE8.xlsx في نفس المجلد');
+        }
+        
+        const arrayBuffer = await response.arrayBuffer();
+        console.log('تم تحميل الملف بنجاح، جاري التحليل...');
+        
+        // قراءة الملف باستخدام XLSX
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        
+        // البحث عن عنصر input file في الصفحة
+        const fileInput = document.querySelector('input[type="file"]');
+        
+        if (fileInput) {
+            // إنشاء File object
+            const file = new File([arrayBuffer], 'OEE8.xlsx', {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
             
-            // البحث عن عنصر input file في الصفحة
-            const fileInput = document.querySelector('input[type="file"]');
-            if (fileInput) {
-                // إنشاء File object من البيانات
-                const file = new File([arrayBuffer], 'OEE8.xlsx', {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                });
-                
-                // إنشاء DataTransfer لتمرير الملف
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                fileInput.files = dataTransfer.files;
-                
-                // تشغيل حدث change
-                fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-                
-                console.log('تم تمرير الملف للداشبورد بنجاح!');
-            } else {
-                console.error('لم يتم العثور على عنصر رفع الملف');
-            }
-        })
-        .catch(error => {
-            console.error('خطأ في تحميل الملف:', error);
-            alert('حدث خطأ في تحميل ملف البيانات. تأكد من وجود ملف OEE8.xlsx في نفس المجلد.');
-        });
+            // إنشاء DataTransfer
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+            
+            // تشغيل حدث change عشان الكود الأصلي يشتغل
+            const event = new Event('change', { bubbles: true });
+            fileInput.dispatchEvent(event);
+            
+            console.log('✅ تم تحميل البيانات أوتوماتيك!');
+            
+            // إخفاء رسالة "لم يتم رفع ملف بعد" لو موجودة
+            const noFileMsg = document.querySelector('.no-file-message');
+            if (noFileMsg) noFileMsg.style.display = 'none';
+        }
+        
+    } catch (error) {
+        console.error('❌ خطأ في التحميل الأوتوماتيك:', error);
+        // ممكن تضيف هنا alert لو عايز
+        // alert('حدث خطأ في تحميل الملف. حاول refresh الصفحة.');
+    }
 });
 </script>
 </body>
