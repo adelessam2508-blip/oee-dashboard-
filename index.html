@@ -921,6 +921,33 @@ function heatCol(v){
  else{var t2=(x-0.5)/0.5; r=255-156*t2; g=235-45*t2; b=132-9*t2;}
  return 'rgb('+Math.round(r)+','+Math.round(g)+','+Math.round(b)+')';
 }
+function kcColor(x){ return x>=1?'var(--te)':x>=.8?'var(--am)':'var(--rd)'; }
+// buildKpiCards: SINGLE SOURCE OF TRUTH for the KPI cards. Both the live dashboard (render())
+// and the printed report (buildReport(), section "1) KPIs Summary") read from this same array,
+// so the printed report can never show a metric that isn't an actual card on screen (and vice
+// versa) — add/remove/reorder a card here and both places update together automatically.
+function buildKpiCards(R){
+ var kc=kcColor;
+ return [
+  {t:bi('إجمالي الماكينات','Total Machines'),v:R.scopeTotal,s:R.scopeFiltered?bi('نطاق الفلتر الحالي','Current filter scope'):bi('إعدادات المصنع','Factory settings'),fmt:'f0',color:'var(--cy)'},
+  {t:bi('استغلال الطاقة','Utilization'),v:R.utilM,s:R.machUniq+' '+bi('من','of')+' '+R.scopeTotal+' '+bi('ماكينة','machines'),fmt:'fp',color:kc(R.utilM/S.goodUtil),bar:R.utilM},
+  {t:bi('متوسط المعطلة/يوم','Avg Breakdown/day'),v:R.avgBdown,s:bi('ماكينة عطلت يوميًا','machines/day'),fmt:'f1',color:R.avgBdown>0?'var(--am)':'var(--te)'},
+  {t:bi('متوسط ساعات العطل/يوم','Avg Breakdown Hours/day'),v:R.avgBdownH,s:bi('ساعة عطل يوميًا','hours/day'),fmt:'f1',color:R.avgBdownH>0?'var(--am)':'var(--te)'},
+  {t:bi('أيام العمل','Working Days'),v:R.daily.length,s:bi('ضمن الفترة المحددة','within selected period'),fmt:'f0',color:'var(--bl)'},
+  {t:bi('متوسط المحملة/يوم','Avg Loaded/day'),v:R.avgLoad,s:bi('خلال الفترة','over period'),fmt:'f1',color:'var(--bl)'},
+  {t:bi('متوسط انتاج اليوم','Avg Daily Production'),v:R.avgProdDay,s:bi('دستة/يوم','doz/day')+' • '+R.prodDaysCount+' '+bi('يوم إنتاج','prod. days'),fmt:'f1',color:'var(--vi)'},
+  {t:bi('الإنتاج الفعلي','Actual Production'),v:R.actF,s:bi('دستة (جيد + درجة 2)','doz (Good+Grade B)'),fmt:'f1',color:'var(--te)'},
+  {t:bi('المستهدف','Target'),v:R.tgG,s:bi('دستة (الكمية المحملة)','doz (Loaded qty)'),fmt:'f1',color:'var(--txt)'},
+  {t:bi('التحقيق','Achievement'),v:R.achF,s:bi('فعلي / مستهدف','Actual / Target'),fmt:'fp',color:kc(R.achF/S.goodAch),bar:R.achF},
+  {t:'OEE',v:R.oeeF,s:bi('خام','Raw')+' '+fp(R.avF*R.pfF*R.qlF),fmt:'fp',color:kc(R.oeeF/S.goodOEE),bar:R.oeeF},
+  {t:bi('خسائر الأعطال','Breakdown Losses'),v:R.tLoss,s:bi('جنيه','EGP')+' • '+f1(R.tDT)+bi(' س','h'),fmt:'f0',color:R.tLoss?'var(--rd)':'var(--te)'},
+  {t:bi('متوسط التوقف/ماكينة','Avg Downtime/Machine'),v:R.avgDTperMachine,s:bi('ساعة','h')+' • '+R.dtMachCount+' '+bi('ماكينة معطلة','mach. w/ DT'),fmt:'f1',color:'var(--rd)'},
+  {t:bi('متوسط الخسارة اليومية','Avg Daily Loss'),v:R.avgLossDay,s:bi('جنيه/يوم','EGP/day')+' • '+R.lossDaysCount+' '+bi('يوم خسارة','loss days'),fmt:'f0',color:'var(--rd)'},
+  {t:bi('أفضل يوم إنتاج','Best Production Day'),v:R.bestDay?R.bestDay.actual:0,s:R.bestDay?(dFull(R.bestDay.d)+' • '+bi('دستة','doz')):'—',fmt:'f1',color:'var(--te)'},
+  {t:bi('أسوأ يوم إنتاج','Worst Production Day'),v:R.worstDay?R.worstDay.actual:0,s:R.worstDay?(dFull(R.worstDay.d)+' • '+bi('دستة','doz')):'—',fmt:'f1',color:'var(--am)'}
+ ];
+}
+function fmtCard(c){ return c.fmt==='fp'?fp(c.v):c.fmt==='f1'?f1(c.v):f0(c.v); }
 function mkChart(id,type,labs,ds,pctAxis,dual){
  var scales={y:pctAxis?{ticks:{color:'#9aa7ba',callback:function(v){return v+'%';}},grid:{color:'rgba(255,255,255,.06)'}}:{ticks:{color:'#9aa7ba'},grid:{color:'rgba(255,255,255,.06)'}}};
  if(dual)scales.y2={position:'left',ticks:{color:'#f6c453'},grid:{drawOnChartArea:false}};
@@ -932,22 +959,21 @@ function mkChart(id,type,labs,ds,pctAxis,dual){
 
 function buildReport(R){
  var P=[];
- var head='<div class="rhead"><h2>SOLO — '+bi('تقرير تشغيل قسم التريكو','Knitting Dept. Operations Report')+' — '+DATA.name+'</h2>';
- head+='<div class="rmeta">'+bi('الفترة','Period')+': '+dFull(R.from)+' → '+dFull(R.to)+' | '+bi('أيام شغل','working days')+': '+R.daily.length+' | '+bi('تحميل','loading')+': '+R.counts.L+' | '+bi('إنتاج','production')+': '+R.counts.P+' | '+bi('أعطال','breakdowns')+': '+R.counts.D+'</div>';
+ var head='<div class="rhead"><h2>SOLO — Knitting Dept. Operations Report — '+DATA.name+'</h2>';
+ head+='<div class="rmeta">Period: '+dFull(R.from)+' → '+dFull(R.to)+' | working days: '+R.daily.length+' | loading: '+R.counts.L+' | production: '+R.counts.P+' | breakdowns: '+R.counts.D+'</div>';
  head+='<div class="rmeta" style="direction:ltr">Developed by Eng. Adel Essam — Planning &amp; IE Dept.</div></div>';
  P.push(head);
 
+ // Section 1 (KPIs Summary) is built from buildKpiCards(R) — the SAME array that renders the
+ // live on-screen KPI cards — so the printed report can never list a metric that isn't an
+ // actual card in the dashboard. Cards are paired two-per-row (Metric | Value | Metric | Value).
  var h1=[bi('المؤشر','Metric'),bi('القيمة','Value'),bi('المؤشر','Metric'),bi('القيمة','Value')];
+ var cardsR=buildKpiCards(R);
  var r1=[];
- r1.push([bi('إجمالي الماكينات','Total Machines'),R.scopeTotal,bi('ماكينات محملة','Loaded Machines'),R.machUniq]);
- r1.push([bi('استغلال الطاقة','Utilization'),fp(R.utilM),bi('متوسط المحملة/يوم','Avg Loaded/day'),f1(R.avgLoad)]);
- r1.push([bi('متوسط المعطلة/يوم','Avg Breakdown/day'),f1(R.avgBdown),bi('المستهدف = المحمل','Target=Loaded'),f1(R.tgG)]);
- r1.push([bi('متوسط ساعات العطل/يوم','Avg Breakdown Hours/day'),f1(R.avgBdownH),'','']);
- r1.push([bi('الإنتاج الفعلي','Actual (doz)'),f1(R.actF),bi('منها درجة 2','of which Grade B'),f1(R.tGB)]);
- r1.push([bi('التحقيق','Achievement'),fp(R.achF),bi('التوافر','Availability'),fp(R.avF)]);
- r1.push([bi('الأداء','Performance'),fp(R.pfFC),bi('الجودة','Quality'),fp(R.qlF)]);
- r1.push(['OEE',fp(R.oeeF),bi('ساعات التوقف','Downtime h'),f1(R.tDT)]);
- r1.push([bi('خسائر الأعطال','Losses (EGP)'),f0(R.tLoss),'','']);
+ for(var ci=0;ci<cardsR.length;ci+=2){
+  var c1=cardsR[ci],c2=cardsR[ci+1];
+  r1.push([c1.t,fmtCard(c1),c2?c2.t:'',c2?fmtCard(c2):'']);
+ }
  P.push(xlT(bi('1) ملخص المؤشرات','1) KPIs Summary'),h1,r1));
 
  var sT=sumBy(R.daily,function(x){return x.target;}), sA=sumBy(R.daily,function(x){return x.actual;});
@@ -1018,24 +1044,9 @@ function render(R){
  var ids=['filtersBar','kpiWrap','chartsTop','tablesGrid','sumWrap','scopeInfo'];
  for(var i=0;i<ids.length;i++){ var el=$('#'+ids[i]); if(el)el.classList.remove('hidden'); }
  $('#scopeInfo').textContent='📅 '+bi('الفترة','Period')+': '+dFull(R.from)+' → '+dFull(R.to)+'  •  '+bi('أيام شغل','working days')+': '+R.daily.length+'  •  '+bi('صفوف','rows')+': '+R.counts.L+' / '+R.counts.P+' / '+R.counts.D;
- var kc=function(x){ return x>=1?'var(--te)':x>=.8?'var(--am)':'var(--rd)'; };
  var kh='';
- kh+=card(bi('إجمالي الماكينات','Total Machines'),R.scopeTotal,R.scopeFiltered?bi('نطاق الفلتر الحالي','Current filter scope'):bi('إعدادات المصنع','Factory settings'),'f0','var(--cy)');
- kh+=card(bi('استغلال الطاقة','Utilization'),R.utilM,R.machUniq+' '+bi('من','of')+' '+R.scopeTotal+' '+bi('ماكينة','machines'),'fp',kc(R.utilM/S.goodUtil),R.utilM);
- kh+=card(bi('متوسط المعطلة/يوم','Avg Breakdown/day'),R.avgBdown,bi('ماكينة عطلت يوميًا','machines/day'),'f1',R.avgBdown>0?'var(--am)':'var(--te)');
- kh+=card(bi('متوسط ساعات العطل/يوم','Avg Breakdown Hours/day'),R.avgBdownH,bi('ساعة عطل يوميًا','hours/day'),'f1',R.avgBdownH>0?'var(--am)':'var(--te)');
- kh+=card(bi('أيام العمل','Working Days'),R.daily.length,bi('ضمن الفترة المحددة','within selected period'),'f0','var(--bl)');
- kh+=card(bi('متوسط المحملة/يوم','Avg Loaded/day'),R.avgLoad,bi('خلال الفترة','over period'),'f1','var(--bl)');
- kh+=card(bi('متوسط انتاج اليوم','Avg Daily Production'),R.avgProdDay,bi('دستة/يوم','doz/day')+' • '+R.prodDaysCount+' '+bi('يوم إنتاج','prod. days'),'f1','var(--vi)');
- kh+=card(bi('الإنتاج الفعلي','Actual Production'),R.actF,bi('دستة (جيد + درجة 2)','doz (Good+Grade B)'),'f1','var(--te)');
- kh+=card(bi('المستهدف','Target'),R.tgG,bi('دستة (الكمية المحملة)','doz (Loaded qty)'),'f1','var(--txt)');
- kh+=card(bi('التحقيق','Achievement'),R.achF,bi('فعلي / مستهدف','Actual / Target'),'fp',kc(R.achF/S.goodAch),R.achF);
- kh+=card('OEE',R.oeeF,bi('خام','Raw')+' '+fp(R.avF*R.pfF*R.qlF),'fp',kc(R.oeeF/S.goodOEE),R.oeeF);
- kh+=card(bi('خسائر الأعطال','Breakdown Losses'),R.tLoss,bi('جنيه','EGP')+' • '+f1(R.tDT)+bi(' س','h'),'f0',R.tLoss?'var(--rd)':'var(--te)');
- kh+=card(bi('متوسط التوقف/ماكينة','Avg Downtime/Machine'),R.avgDTperMachine,bi('ساعة','h')+' • '+R.dtMachCount+' '+bi('ماكينة معطلة','mach. w/ DT'),'f1','var(--rd)');
- kh+=card(bi('متوسط الخسارة اليومية','Avg Daily Loss'),R.avgLossDay,bi('جنيه/يوم','EGP/day')+' • '+R.lossDaysCount+' '+bi('يوم خسارة','loss days'),'f0','var(--rd)');
- kh+=card(bi('أفضل يوم إنتاج','Best Production Day'),R.bestDay?R.bestDay.actual:0,R.bestDay?(dFull(R.bestDay.d)+' • '+bi('دستة','doz')):'—','f1','var(--te)');
- kh+=card(bi('أسوأ يوم إنتاج','Worst Production Day'),R.worstDay?R.worstDay.actual:0,R.worstDay?(dFull(R.worstDay.d)+' • '+bi('دستة','doz')):'—','f1','var(--am)');
+ var cards=buildKpiCards(R);
+ for(var ci=0;ci<cards.length;ci++)kh+=card(cards[ci].t,cards[ci].v,cards[ci].s,cards[ci].fmt,cards[ci].color,cards[ci].bar);
  $('#kpiRow').innerHTML=kh;
  requestAnimationFrame(function(){
   var vs=document.querySelectorAll('.kpi .v');
