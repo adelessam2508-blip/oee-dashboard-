@@ -763,6 +763,13 @@ function compute(){
  var plH=0,runH=0;
  for(i=0;i<mArr.length;i++){ plH+=mArr[i].o.pl; runH+=Math.max(0,mArr[i].o.pl-mArr[i].o.dtU); }
  var avF=pct(runH,plH);
+
+ // avgDTperMachine: total downtime hours (tDT) divided by the number of DISTINCT machines that
+ // actually had any downtime (dtT>0) — not the whole factory/scope machine count — so it reads
+ // as "average stoppage length per machine that broke down", not diluted by machines with none.
+ var dtMachCount=0;
+ for(i=0;i<mArr.length;i++){ if(mArr[i].o.dtT>0)dtMachCount++; }
+ var avgDTperMachine=dtMachCount?tDT/dtMachCount:0;
  var pfF=pct(actF,totQty); var pfFC=S.cap?Math.min(1,pfF):pfF;
  var qlF=pct(tDz,actF);
  var oeeF=avF*pfFC*qlF;
@@ -796,6 +803,15 @@ function compute(){
  var nDays=daily.length||1;
  var avgLoad=0; for(i=0;i<daily.length;i++)avgLoad+=daily[i].ld; avgLoad/=nDays;
 
+ // bestDay / worstDay: the working day with the highest / lowest actual production (dz+gb)
+ // within the selected period+filters. worstDay ignores zero-production days (no card is
+ // useful for "worst day: 0"), so it's picked only among days that actually produced something.
+ var bestDay=null,worstDay=null;
+ for(i=0;i<daily.length;i++){
+  if(!bestDay||daily[i].actual>bestDay.actual)bestDay=daily[i];
+  if(daily[i].actual>0&&(!worstDay||daily[i].actual<worstDay.actual))worstDay=daily[i];
+ }
+
  var bPerDay=new Map();
  DM.forEach(function(v,k5){ var d=+k5.split('|')[0]; bPerDay.set(d,(bPerDay.get(d)||0)+1); });
  var sumB=0; for(i=0;i<daily.length;i++)sumB+=(bPerDay.get(daily[i].d)||0);
@@ -812,6 +828,13 @@ function compute(){
  var prodDaysCount=0;
  for(i=0;i<daily.length;i++){ if(daily[i].actual>0)prodDaysCount++; }
  var avgProdDay=prodDaysCount?actF/prodDaysCount:0;
+
+ // avgLossDay: same method as avgProdDay, but on breakdown losses (EGP) instead of production —
+ // total losses (tLoss) divided by the number of working days that actually recorded a loss
+ // (loss>0), not by every working day in the period.
+ var lossDaysCount=0;
+ for(i=0;i<daily.length;i++){ if(daily[i].loss>0)lossDaysCount++; }
+ var avgLossDay=lossDaysCount?tLoss/lossDaysCount:0;
 
  var par=[];
  DRz.forEach(function(v,k6){ par.push({lb:k6,h:v.t,dz:v.ld,egp:v.le}); });
@@ -874,7 +897,8 @@ function compute(){
  return {from:from,to:to,counts:{L:L.length,P:P.length,D:D.length},totCap:totCap,totQty:totQty,machUniq:machSet.size,utilM:utilM,scopeTotal:scopeTotal,scopeFiltered:scopeFiltered,
   tDz:tDz,tGB:tGB,actF:actF,tgG:totQty,achF:achF,avF:avF,pfF:pfF,pfFC:pfFC,qlF:qlF,oeeF:oeeF,tDT:tDT,tDTU:tDTU,tLoss:tLoss,
   daily:daily,par:par,needles:needles,rooms:rooms,custs:custs,lossRooms:lossRooms,topLoss:topLoss,stCount:stCount,
-  heatM:hM,heatD:hD,heat:heat,alerts:alerts,good:good,warn:warn,crit:crit,mArr:mArr,avgLoad:avgLoad,avgBdown:avgBdown,avgBdownH:avgBdownH,avgProdDay:avgProdDay,prodDaysCount:prodDaysCount};
+  heatM:hM,heatD:hD,heat:heat,alerts:alerts,good:good,warn:warn,crit:crit,mArr:mArr,avgLoad:avgLoad,avgBdown:avgBdown,avgBdownH:avgBdownH,avgProdDay:avgProdDay,prodDaysCount:prodDaysCount,
+  avgDTperMachine:avgDTperMachine,dtMachCount:dtMachCount,bestDay:bestDay,worstDay:worstDay,avgLossDay:avgLossDay,lossDaysCount:lossDaysCount};
 }
 
 /* ===== Render ===== */
@@ -997,7 +1021,6 @@ function render(R){
  var kc=function(x){ return x>=1?'var(--te)':x>=.8?'var(--am)':'var(--rd)'; };
  var kh='';
  kh+=card(bi('إجمالي الماكينات','Total Machines'),R.scopeTotal,R.scopeFiltered?bi('نطاق الفلتر الحالي','Current filter scope'):bi('إعدادات المصنع','Factory settings'),'f0','var(--cy)');
- kh+=card(bi('ماكينات محملة','Loaded Machines'),R.machUniq,bi('طاقة','Capacity')+' '+f1(R.totCap),'f0','var(--bl)');
  kh+=card(bi('استغلال الطاقة','Utilization'),R.utilM,R.machUniq+' '+bi('من','of')+' '+R.scopeTotal+' '+bi('ماكينة','machines'),'fp',kc(R.utilM/S.goodUtil),R.utilM);
  kh+=card(bi('متوسط المعطلة/يوم','Avg Breakdown/day'),R.avgBdown,bi('ماكينة عطلت يوميًا','machines/day'),'f1',R.avgBdown>0?'var(--am)':'var(--te)');
  kh+=card(bi('متوسط ساعات العطل/يوم','Avg Breakdown Hours/day'),R.avgBdownH,bi('ساعة عطل يوميًا','hours/day'),'f1',R.avgBdownH>0?'var(--am)':'var(--te)');
@@ -1009,6 +1032,10 @@ function render(R){
  kh+=card(bi('التحقيق','Achievement'),R.achF,bi('فعلي / مستهدف','Actual / Target'),'fp',kc(R.achF/S.goodAch),R.achF);
  kh+=card('OEE',R.oeeF,bi('خام','Raw')+' '+fp(R.avF*R.pfF*R.qlF),'fp',kc(R.oeeF/S.goodOEE),R.oeeF);
  kh+=card(bi('خسائر الأعطال','Breakdown Losses'),R.tLoss,bi('جنيه','EGP')+' • '+f1(R.tDT)+bi(' س','h'),'f0',R.tLoss?'var(--rd)':'var(--te)');
+ kh+=card(bi('متوسط التوقف/ماكينة','Avg Downtime/Machine'),R.avgDTperMachine,bi('ساعة','h')+' • '+R.dtMachCount+' '+bi('ماكينة معطلة','mach. w/ DT'),'f1','var(--rd)');
+ kh+=card(bi('متوسط الخسارة اليومية','Avg Daily Loss'),R.avgLossDay,bi('جنيه/يوم','EGP/day')+' • '+R.lossDaysCount+' '+bi('يوم خسارة','loss days'),'f0','var(--rd)');
+ kh+=card(bi('أفضل يوم إنتاج','Best Production Day'),R.bestDay?R.bestDay.actual:0,R.bestDay?(dFull(R.bestDay.d)+' • '+bi('دستة','doz')):'—','f1','var(--te)');
+ kh+=card(bi('أسوأ يوم إنتاج','Worst Production Day'),R.worstDay?R.worstDay.actual:0,R.worstDay?(dFull(R.worstDay.d)+' • '+bi('دستة','doz')):'—','f1','var(--am)');
  $('#kpiRow').innerHTML=kh;
  requestAnimationFrame(function(){
   var vs=document.querySelectorAll('.kpi .v');
