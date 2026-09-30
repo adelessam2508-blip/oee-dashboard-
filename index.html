@@ -133,6 +133,29 @@ tr:hover td{background:rgba(246,196,83,.06)}
 #report .tot td{background:#e5e7eb;color:#000;border-top:2px solid #000;font-weight:800}
 #report tr{page-break-inside:avoid}
 #report h3{page-break-after:avoid}
+#report .rkey{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:6px}
+#report .rkey span{border:1px solid #9ca3af;border-radius:4px;padding:2px 8px;font-size:10.5px;background:#f9fafb;color:#111}
+#report .rkey b{font-size:12.5px}
+#report .rsrc{font-size:8.5px;color:#6b7280;margin-top:4px;direction:ltr}
+#report .kgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:4px}
+#report .kt{box-sizing:border-box;border:1px solid #cbd5e1;border-radius:6px;padding:4px 8px;page-break-inside:avoid}
+#report .kl{font-size:9.5px;color:#374151}
+#report .kv{font-size:18px;font-weight:800;line-height:1.25}
+#report .ks{font-size:8.5px;color:#6b7280}
+#report .row3{display:flex;gap:8px;margin-top:4px}
+#report .row3>div{flex:1;min-width:0}
+#report .cap{font-size:9.5px;font-weight:700;margin:2px 0;color:#111}
+#report .cap.sm{font-size:8.5px;font-weight:400;color:#4b5563}
+#report .cols{display:flex;gap:12px;align-items:flex-start}
+#report .col{flex:1;min-width:0}
+#report .pg{page-break-before:always;break-before:page}
+#report .sec{margin-bottom:8px;page-break-inside:avoid;break-inside:avoid}
+#report .sumrow{display:flex;gap:6px}
+#report .sbx{flex:1;border:1px solid #9ca3af;border-radius:5px;padding:4px 7px;font-size:9.5px;color:#111}
+#report .sbx.g{border-color:#16a34a}#report .sbx.w{border-color:#d97706}#report .sbx.c{border-color:#dc2626}
+#report .sbx ul{margin:3px 0 0;padding:0 14px}
+#report .alist{margin:4px 0 0;padding:0 18px;font-size:9.5px;line-height:1.55;color:#111}
+
 @media print{
  body{background:#fff}
  body.print-mode *{visibility:hidden}
@@ -151,10 +174,12 @@ tr:hover td{background:rgba(246,196,83,.06)}
  body.print-mode .print-target .box h4,body.print-mode .print-target .box ul,body.print-mode .print-target .box li{color:#000}
  body.print-mode .print-target canvas{max-height:380px}
  body.report-mode header,body.report-mode main,body.report-mode .modal{display:none!important}
- body.report-mode{background:#fff}
+ body.report-mode{background:#fff;page:soloRep}
+ body.report-mode #report,body.report-mode #report *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
  body.report-mode #report{display:block}
  body.report-mode .pbtn{display:none!important}
  @page soloPDF{size:A4 landscape;margin:8mm}
+ @page soloRep{size:A4 landscape;margin:7mm}
  body.pdf-mode{page:soloPDF;background:var(--bg)}
  body.pdf-mode *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:none!important}
  body.pdf-mode header{position:static;background:rgba(13,20,36,.9)}
@@ -350,8 +375,8 @@ function dFull(d){var x=new Date(Math.round((d-25569)*86400000)); return x.getUT
 function mach(v){ return typeof v==='number'?String(Math.round(v)):txt(v); }
 function pct(a,b){ return b? a/b : 0; }
 function f0(x){ return Math.round(x).toLocaleString('en-US'); }
-function f1(x){ return x.toFixed(1); }
-function fp(x){ return (x*100).toFixed(1)+'%'; }
+function f1(x){ var y=Math.round((x+(x>=0?1e-7:-1e-7))*10)/10; if(y===0)y=0; return y.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1}); } // epsilon + thousands separators: the same total prints the same everywhere
+function fp(x){ return f1(x*100)+'%'; }
 function matchF(f,v){ if(!f||f==='*')return true; return String(f).toLowerCase()===String(v).toLowerCase(); }
 function sumBy(list,fn){ var s=0; for(var i=0;i<list.length;i++){ s+=fn(list[i]); } return s; }
 
@@ -586,7 +611,7 @@ function addD(d,k,t,u,ld,le){ var o=d.get(k); if(!o){o={t:0,u:0,ld:0,le:0};d.set
 // machine's daily load, instead of by machine-day like Needle/Room.
 function groupTable(mode,LM,CON,PM,DM,PG){
  var g=new Map(),uq=new Map();
- function G(k){ var o=g.get(k); if(!o){o={pl:0,dtU:0,dz:0,gb:0,tgt:0};g.set(k,o);} return o; }
+ function G(k){ var o=g.get(k); if(!o){o={pl:0,dtU:0,dtT:0,dz:0,gb:0,tgt:0};g.set(k,o);} return o; }
  function U(k,m){ var s=uq.get(k); if(!s){s=new Set();uq.set(k,s);} s.add(m); }
  LM.forEach(function(v,k){
   var m=k.split('|')[1];
@@ -611,11 +636,11 @@ function groupTable(mode,LM,CON,PM,DM,PG){
   if(mode==='Cust'){
    if(CON.has(k)){
     var tot=0; CON.get(k).forEach(function(it){tot+=it.cv;});
-    if(tot>0)CON.get(k).forEach(function(it){ var o=G(it.cust); o.dtU+=v.u*it.cv/tot; });
+    if(tot>0)CON.get(k).forEach(function(it){ var o=G(it.cust); o.dtU+=v.u*it.cv/tot; o.dtT+=v.t*it.cv/tot; });
    }
   }else{
    var key=mode==='Needle'?(mNd(m)||'(؟)'):(mRm(m)||'(؟)');
-   G(key).dtU+=v.u;
+   var og=G(key); og.dtU+=v.u; og.dtT+=v.t;
   }
  });
  var out=[];
@@ -624,14 +649,15 @@ function groupTable(mode,LM,CON,PM,DM,PG){
   var av=pct(Math.max(0,v.pl-v.dtU),v.pl);
   var pf=pct(act,v.tgt);
   var ql=pct(v.dz,act);
-  out.push({k:k,cap:v.pl/S.hpd,uniq:uq.has(k)?uq.get(k).size:0,target:v.tgt,dz:act,ach:pct(act,v.tgt),dt:v.dtU,oee:av*Math.min(1,pf)*ql});
+  out.push({k:k,cap:v.pl/S.hpd,uniq:uq.has(k)?uq.get(k).size:0,target:v.tgt,dz:act,ach:pct(act,v.tgt),dt:v.dtU,dtT:v.dtT,oee:av*Math.min(1,pf)*ql});
  });
  out.sort(function(a,b){return b.dz-a.dz;});
  return out;
 }
-function gTotals(list){
+function gTotals(list,R){
  var m=0,tg=0,dz=0,dt=0,ow=0;
- for(var i=0;i<list.length;i++){ m+=list[i].uniq; tg+=list[i].target; dz+=list[i].dz; dt+=list[i].dt; ow+=list[i].oee*list[i].dz; }
+ for(var i=0;i<list.length;i++){ m+=list[i].uniq; tg+=list[i].target; dz+=list[i].dz; dt+=(list[i].dtT!=null?list[i].dtT:list[i].dt); ow+=list[i].oee*list[i].dz; }
+ if(R){ m=R.machUniq; return {m:m,tg:tg,dz:dz,dt:dt,oee:R.oeeF}; } // same OEE as the header KPI
  return {m:m,tg:tg,dz:dz,dt:dt,oee:dz?ow/dz:0};
 }
 
@@ -870,7 +896,7 @@ function compute(){
  if(prodM.length){var wm=prodM.slice().sort(function(a,b){return a.oee-b.oee;})[0]; alerts.push(bi('أسوأ ماكينة منتجة','Worst producing machine')+': '+wm.m+' ('+fp(wm.oee)+')');}
  if(par.length)alerts.push(bi('أكبر سبب توقف','Top downtime cause')+': '+par[0].lb+' ('+f1(par[0].h)+bi(' س','h')+')');
  if(topLoss.length)alerts.push(bi('أعلى خسارة مالية','Highest loss')+': '+bi('ماكينة','machine')+' '+topLoss[0].k+' ('+f0(topLoss[0].egp)+bi(' ج',' EGP')+')');
- if(custs.length)alerts.push(bi('أكبر مستهلك طاقة','Largest capacity consumer')+': '+custs[0].k+' ('+f1(custs[0].cap)+bi(' ماكينة',' mach.')+')');
+ if(custs.length)alerts.push(bi('أكبر مستهلك طاقة','Largest capacity consumer')+': '+custs[0].k+' ('+f1(custs[0].cap)+bi(' ماكينة-يوم',' machine-days')+')');
  var zero=mArr.filter(function(x){return x.o.cap>0&&x.o.dz===0;});
  if(zero.length){
   var names='';
@@ -957,78 +983,249 @@ function mkChart(id,type,labs,ds,pctAxis,dual){
   scales:scales}});
 }
 
+/* ===== Report (charts, print-friendly) =====
+ * The full report is drawn with inline SVG (no canvas / no Chart.js) so it prints sharp, needs no
+ * async rendering, and stays small. EVERY number in it comes from the same result object R that
+ * feeds the on-screen KPI cards, so header, tiles, charts and totals can never disagree. */
+var RC={good:'#16a34a',warn:'#d97706',bad:'#dc2626',blue:'#2563eb',vio:'#7c3aed',gray:'#d1d5db',slate:'#94a3b8',ink:'#111827',mute:'#6b7280'};
+var KCOL={'var(--te)':'#15803d','var(--am)':'#b45309','var(--rd)':'#b91c1c','var(--cy)':'#a16207','var(--bl)':'#1d4ed8','var(--vi)':'#6d28d9','var(--txt)':'#111827'};
+function cb(ar,en){ return LANG==='ar'?ar:en; } // text INSIDE svg charts: Arabic-only or English-only (no mixed bidi)
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function trunc(s,n){ s=String(s); return s.length>n?s.slice(0,n-1)+'…':s; }
+function achCol(a){ return a>=S.goodAch?RC.good:a>=S.warnAch?RC.warn:RC.bad; }
+var SVGH='<svg xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;direction:ltr;font-family:Tajawal,Arial,sans-serif" ';
+
+// Horizontal "bullet" bars: grey = loaded/target, coloured = actual (green/amber/red by achievement).
+// items: {k,t,a,ach,v:[col values],c?,single?}   o: {W,lab,cw:[col widths],cols:[headers],legend,total:{k,v}}
+function svgBullet(items,o){
+ var W=o.W||560, rh=o.rh||16.5, lab=o.lab||84, cw=o.cw||[], cols=o.cols||[], top=14, i, j;
+ var colsW=0; for(j=0;j<cw.length;j++)colsW+=cw[j];
+ var bx=lab+4, bw=W-bx-colsW-6, n=items.length+(o.total?1:0), H=top+n*rh+6, mx=0;
+ for(i=0;i<items.length;i++)mx=Math.max(mx,items[i].t||0,items[i].a||0);
+ if(!mx)mx=1;
+ function cx(j){ var x=W-6; for(var q=cw.length-1;q>j;q--)x-=cw[q]; return x; } // right edge of column j
+ var s=SVGH+'viewBox="0 0 '+W+' '+H+'">';
+ for(j=0;j<cols.length;j++)s+='<text x="'+cx(j)+'" y="9" font-size="7" text-anchor="end" fill="'+RC.mute+'">'+esc(cols[j])+'</text>';
+ s+='<line x1="0" y1="11.5" x2="'+W+'" y2="11.5" stroke="#9ca3af" stroke-width=".6"/>';
+ for(i=0;i<items.length;i++){
+  var it=items[i], y=top+i*rh;
+  if(i%2===0)s+='<rect x="0" y="'+y+'" width="'+W+'" height="'+rh+'" fill="#f3f4f6"/>';
+  s+='<text x="'+lab+'" y="'+(y+rh-4.5)+'" font-size="8.8" text-anchor="end" fill="'+RC.ink+'">'+esc(trunc(it.k,o.maxc||16))+'</text>';
+  if(it.single){
+   s+='<rect x="'+bx+'" y="'+(y+2.5)+'" width="'+Math.max(0,it.a/mx*bw)+'" height="'+(rh-5)+'" fill="'+(it.c||RC.blue)+'"/>';
+  }else{
+   s+='<rect x="'+bx+'" y="'+(y+2)+'" width="'+Math.max(0,it.t/mx*bw)+'" height="'+(rh-4)+'" fill="'+RC.gray+'"/>';
+   s+='<rect x="'+bx+'" y="'+(y+4.5)+'" width="'+Math.max(0,it.a/mx*bw)+'" height="'+(rh-9)+'" fill="'+(it.c||achCol(it.ach))+'"/>';
+  }
+  for(j=0;j<cw.length;j++)s+='<text x="'+cx(j)+'" y="'+(y+rh-4.5)+'" font-size="8.3" text-anchor="end" fill="'+RC.ink+'">'+esc(it.v[j])+'</text>';
+ }
+ if(o.total){
+  var yt=top+items.length*rh;
+  s+='<line x1="0" y1="'+(yt+.5)+'" x2="'+W+'" y2="'+(yt+.5)+'" stroke="#111827" stroke-width="1.1"/>';
+  s+='<text x="'+lab+'" y="'+(yt+rh-4)+'" font-size="8.8" font-weight="700" text-anchor="end" fill="'+RC.ink+'">'+esc(o.total.k)+'</text>';
+  for(j=0;j<cw.length;j++)s+='<text x="'+cx(j)+'" y="'+(yt+rh-4)+'" font-size="8.5" font-weight="700" text-anchor="end" fill="'+RC.ink+'">'+esc(o.total.v[j])+'</text>';
+ }
+ return s+'</svg>';
+}
+
+function niceRange(mn,mx,n){
+ if(mx<=mn)mx=mn+1;
+ var raw=(mx-mn)/n, p=Math.pow(10,Math.floor(Math.log(raw)/Math.LN10)), f=raw/p;
+ var st=(f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p;
+ return {lo:Math.floor(mn/st+1e-9)*st, hi:Math.ceil(mx/st-1e-9)*st, st:st};
+}
+// Line / bar chart. o:{labels,series:[{n,c,d,bar?,w?}],pct?,zero?,marks:[{i,v,txt,c,dn?}],W,H}
+function svgLines(o){
+ var W=o.W||350,H=o.H||190,L=o.pct?32:40,Rr=8,T=24,B=18,n=o.labels.length,all=[],k,i;
+ for(k=0;k<o.series.length;k++)for(i=0;i<o.series[k].d.length;i++)all.push(o.series[k].d[i]);
+ if(!n||!all.length)return '';
+ var mn=Math.min.apply(null,all), mx=Math.max.apply(null,all);
+ if(o.zero)mn=Math.min(0,mn);
+ var nr=niceRange(mn,mx,4), pw=W-L-Rr, ph=H-T-B;
+ function X(i){ return L+(n>1?i*pw/(n-1):pw/2); }
+ function Y(v){ return T+ph-(v-nr.lo)/(nr.hi-nr.lo)*ph; }
+ var s=SVGH+'viewBox="0 0 '+W+' '+H+'">';
+ for(var g=nr.lo;g<=nr.hi+nr.st*1e-6;g+=nr.st){
+  var yy=Y(g);
+  s+='<line x1="'+L+'" y1="'+yy+'" x2="'+(W-Rr)+'" y2="'+yy+'" stroke="#e5e7eb" stroke-width=".7"/>';
+  s+='<text x="'+(L-3)+'" y="'+(yy+2.8)+'" font-size="7.3" text-anchor="end" fill="'+RC.mute+'">'+(o.pct?Math.round(g)+'%':f0(g))+'</text>';
+ }
+ var step=Math.ceil(n/9);
+ for(i=0;i<n;i+=step)s+='<text x="'+X(i)+'" y="'+(H-5)+'" font-size="7.3" text-anchor="middle" fill="'+RC.mute+'">'+esc(o.labels[i])+'</text>';
+ var bw=Math.max(2,pw/n*.62);
+ for(k=0;k<o.series.length;k++){
+  var se=o.series[k];
+  if(se.bar){
+   for(i=0;i<n;i++)s+='<rect x="'+(X(i)-bw/2)+'" y="'+Y(se.d[i])+'" width="'+bw+'" height="'+Math.max(0,Y(nr.lo)-Y(se.d[i]))+'" fill="'+se.c+'"/>';
+  }else{
+   var pts=''; for(i=0;i<n;i++)pts+=X(i).toFixed(1)+','+Y(se.d[i]).toFixed(1)+' ';
+   s+='<polyline fill="none" stroke="'+se.c+'" stroke-width="'+(se.w||1.5)+'" stroke-linejoin="round" points="'+pts+'"/>';
+  }
+ }
+ var lx=L;
+ for(k=0;k<o.series.length;k++){
+  s+='<rect x="'+lx+'" y="5" width="9" height="'+(o.series[k].bar?6:2.4)+'" fill="'+o.series[k].c+'"/><text x="'+(lx+12)+'" y="11" font-size="7.8" fill="'+RC.ink+'">'+esc(o.series[k].n)+'</text>';
+  lx+=16+o.series[k].n.length*4.1;
+ }
+ var ms=o.marks||[];
+ for(k=0;k<ms.length;k++){
+  var m=ms[k], px=X(m.i), py=Y(m.v), late=m.i>n*.6;
+  s+='<circle cx="'+px+'" cy="'+py+'" r="3.4" fill="#fff" stroke="'+m.c+'" stroke-width="1.8"/>';
+  s+='<text x="'+(late?px-2:px+2)+'" y="'+(m.dn?py+12:py-6)+'" font-size="7.8" font-weight="700" text-anchor="'+(late?'end':'start')+'" fill="'+m.c+'">'+esc(m.txt)+'</text>';
+ }
+ return s+'</svg>';
+}
+
+// One stacked bar for machine status + a 2-column legend with counts.
+function svgStack(counts){
+ var keys=Object.keys(counts), tot=0, i, W=560;
+ for(i=0;i<keys.length;i++)tot+=counts[keys[i]];
+ var pal=['#16a34a','#d97706','#ea580c','#dc2626','#2563eb','#6b7280'];
+ var rows=Math.ceil(keys.length/2), H=28+rows*13+4;
+ var s=SVGH+'viewBox="0 0 '+W+' '+H+'">', x=0;
+ for(i=0;i<keys.length;i++){
+  var w=tot?counts[keys[i]]/tot*W:0;
+  s+='<rect x="'+x+'" y="3" width="'+w+'" height="17" fill="'+pal[i%pal.length]+'"/>'; x+=w;
+ }
+ for(i=0;i<keys.length;i++){
+  var cx=(i%2)*(W/2), cy=32+Math.floor(i/2)*13;
+  s+='<rect x="'+cx+'" y="'+(cy-7)+'" width="8" height="8" fill="'+pal[i%pal.length]+'"/>';
+  s+='<text x="'+(cx+12)+'" y="'+cy+'" font-size="8.8" fill="'+RC.ink+'">'+esc(trunc(keys[i],30))+'</text>';
+  s+='<text x="'+(cx+W/2-14)+'" y="'+cy+'" font-size="8.8" font-weight="700" text-anchor="end" fill="'+RC.ink+'">'+counts[keys[i]]+' ('+fp(pct(counts[keys[i]],tot))+')</text>';
+ }
+ return {svg:s+'</svg>',total:tot};
+}
+
+function repSec(title,body){ return '<div class="sec"><h3>'+title+'</h3>'+body+'</div>'; }
+
 function buildReport(R){
- var P=[];
- var head='<div class="rhead"><h2>SOLO — Knitting Dept. Operations Report — '+DATA.name+'</h2>';
- head+='<div class="rmeta">Period: '+dFull(R.from)+' → '+dFull(R.to)+' | working days: '+R.daily.length+' | loading: '+R.counts.L+' | production: '+R.counts.P+' | breakdowns: '+R.counts.D+'</div>';
- head+='<div class="rmeta" style="direction:ltr">Developed by Eng. Adel Essam — Planning &amp; IE Dept.</div></div>';
+ var P=[], i, cards=buildKpiCards(R);
+
+ // ---- Header: every figure here is the same value the KPI tiles / charts below show ----
+ var head='<div class="rhead"><h2>SOLO — Knitting Dept. Operations Report — '+esc(DATA.name)+'</h2>';
+ head+='<div class="rmeta"><b>'+bi('الفترة','Period')+':</b> '+dFull(R.from)+' → '+dFull(R.to)+' &nbsp;|&nbsp; <b>'+bi('أيام العمل','Working days')+':</b> '+R.daily.length+' &nbsp;|&nbsp; <b>'+bi('ماكينات عملت','Machines used')+':</b> '+R.machUniq+' / '+R.scopeTotal+'</div>';
+ var hk=[
+  [bi('المحمل (المستهدف)','Loaded (Target)'),f1(R.tgG)+' '+bi('دستة','doz')],
+  [bi('الفعلي','Actual'),f1(R.actF)+' '+bi('دستة','doz')],
+  [bi('التحقيق','Achievement'),fp(R.achF)],
+  ['OEE',fp(R.oeeF)],
+  [bi('ساعات التوقف','Downtime'),f1(R.tDT)+' '+bi('س','h')],
+  [bi('خسائر الأعطال','Breakdown losses'),f0(R.tLoss)+' '+bi('ج','EGP')]
+ ];
+ head+='<div class="rkey">';
+ for(i=0;i<hk.length;i++)head+='<span>'+hk[i][0]+': <b>'+hk[i][1]+'</b></span>';
+ head+='</div>';
+ head+='<div class="rsrc">'+bi('صفوف الملف','Source rows')+' — '+bi('التحميل','loading')+': '+f0(R.counts.L)+' | '+bi('الإنتاج','production')+': '+f0(R.counts.P)+' | '+bi('الأعطال','breakdowns')+': '+f0(R.counts.D)+' &nbsp;•&nbsp; Developed by Eng. Adel Essam — Planning &amp; IE Dept.</div></div>';
  P.push(head);
 
- // Section 1 (KPIs Summary) is built from buildKpiCards(R) — the SAME array that renders the
- // live on-screen KPI cards — so the printed report can never list a metric that isn't an
- // actual card in the dashboard. Cards are paired two-per-row (Metric | Value | Metric | Value).
- var h1=[bi('المؤشر','Metric'),bi('القيمة','Value'),bi('المؤشر','Metric'),bi('القيمة','Value')];
- var cardsR=buildKpiCards(R);
- var r1=[];
- for(var ci=0;ci<cardsR.length;ci+=2){
-  var c1=cardsR[ci],c2=cardsR[ci+1];
-  r1.push([c1.t,fmtCard(c1),c2?c2.t:'',c2?fmtCard(c2):'']);
+ // ---- 1) KPI tiles (same array as the on-screen cards) ----
+ var kt='<div class="kgrid">';
+ for(i=0;i<cards.length;i++){
+  var c=cards[i];
+  kt+='<div class="kt"><div class="kl">'+c.t+'</div><div class="kv" style="color:'+(KCOL[c.color]||RC.ink)+'">'+fmtCard(c)+'</div><div class="ks">'+c.s+'</div></div>';
  }
- P.push(xlT(bi('1) ملخص المؤشرات','1) KPIs Summary'),h1,r1));
+ P.push(repSec(bi('1) ملخص المؤشرات','1) KPIs Summary'),kt+'</div>'));
 
- var sT=sumBy(R.daily,function(x){return x.target;}), sA=sumBy(R.daily,function(x){return x.actual;});
- var sD=sumBy(R.daily,function(x){return x.dt;}), sL=sumBy(R.daily,function(x){return x.loss;});
- var h2=[bi('التاريخ','Date'),bi('مستهدف','Target'),bi('فعلي','Actual'),bi('تحقيق','Ach%'),bi('توافر','Avail%'),bi('أداء','Perf%'),bi('جودة','Qual%'),'OEE',bi('توقف','DT h'),bi('خسارة','Loss EGP')];
- var r2=R.daily.map(function(x){return [dFull(x.d),f1(x.target),f1(x.actual),fp(pct(x.actual,x.target)),fp(x.av),fp(x.perf),fp(x.qual),fp(x.oee),f1(x.dt),f0(x.loss)];});
- var t2=[bi('الإجمالي','TOTAL'),f1(sT),f1(sA),fp(pct(sA,sT)),fp(R.avF),fp(R.pfFC),fp(R.qlF),fp(R.oeeF),f1(sD),f0(sL)];
- P.push(xlT(bi('2) الأداء اليومي','2) Daily Performance'),h2,r2,t2));
+ // ---- 2) Daily performance: three charts ----
+ var labs=R.daily.map(function(x){return dLabel(x.d);});
+ var bi_=-1,wi_=-1;
+ for(i=0;i<R.daily.length;i++){ if(R.daily[i]===R.bestDay)bi_=i; if(R.daily[i]===R.worstDay)wi_=i; }
+ var marks=[];
+ if(bi_>=0)marks.push({i:bi_,v:R.bestDay.actual,c:RC.good,txt:cb('أفضل','Best')+' '+f1(R.bestDay.actual)+' ('+dFull(R.bestDay.d)+')'});
+ if(wi_>=0)marks.push({i:wi_,v:R.worstDay.actual,c:RC.bad,dn:true,txt:cb('أسوأ','Worst')+' '+f1(R.worstDay.actual)+' ('+dFull(R.worstDay.d)+')'});
+ var sA=sumBy(R.daily,function(x){return x.actual;}), sT=sumBy(R.daily,function(x){return x.target;}), sD=sumBy(R.daily,function(x){return x.dt;});
+ var ch1=svgLines({labels:labs,marks:marks,series:[
+  {n:cb('مستهدف','Target'),c:RC.blue,d:R.daily.map(function(x){return x.target;})},
+  {n:cb('فعلي','Actual'),c:RC.good,d:R.daily.map(function(x){return x.actual;}),w:1.9}]});
+ var ch2=svgLines({pct:true,labels:labs,series:[
+  {n:'OEE',c:RC.warn,w:2.2,d:R.daily.map(function(x){return x.oee*100;})},
+  {n:cb('توافر','Avail'),c:RC.good,d:R.daily.map(function(x){return x.av*100;})},
+  {n:cb('أداء','Perf'),c:RC.blue,d:R.daily.map(function(x){return x.perf*100;})},
+  {n:cb('جودة','Qual'),c:RC.vio,d:R.daily.map(function(x){return x.qual*100;})}]});
+ var ch3=svgLines({zero:true,labels:labs,series:[{n:cb('ساعات التوقف','Downtime h'),c:'#ef4444',bar:true,d:R.daily.map(function(x){return x.dt;})}]});
+ var d2='<div class="row3">'+
+  '<div><div class="cap">'+bi('مستهدف مقابل فعلي (دستة)','Target vs Actual (doz)')+' — Σ '+f1(sT)+' / '+f1(sA)+'</div>'+ch1+'</div>'+
+  '<div><div class="cap">'+bi('OEE ومكوناته','OEE &amp; components')+' — '+bi('الفترة','Period')+' '+fp(R.oeeF)+' ('+bi('توافر','A')+' '+fp(R.avF)+' • '+bi('أداء','P')+' '+fp(R.pfFC)+' • '+bi('جودة','Q')+' '+fp(R.qlF)+')</div>'+ch2+'</div>'+
+  '<div><div class="cap">'+bi('ساعات التوقف اليومية','Daily downtime (h)')+' — Σ '+f1(sD)+' '+bi('س','h')+'</div>'+ch3+'</div></div>';
+ P.push(repSec(bi('2) الأداء اليومي','2) Daily Performance'),d2));
 
- var h3=[bi('إبرة','Needle'),bi('ماكينات','Machines'),bi('محمل','Loaded'),bi('فعلي','Actual'),bi('تحقيق','Ach%'),bi('توقف','DT h'),'OEE'];
- var r3=R.needles.map(function(x){return [x.k,x.uniq,f1(x.target),f1(x.dz),fp(x.ach),f1(x.dt),fp(x.oee)];});
- var nT=gTotals(R.needles);
- var t3=[bi('الإجمالي','TOTAL'),nT.m,f1(nT.tg),f1(nT.dz),fp(pct(nT.dz,nT.tg)),f1(nT.dt),fp(nT.oee)];
- P.push(xlT(bi('3) حسب الإبرة','3) By Needle'),h3,r3,t3));
+ // ---- Group charts (needle / room / customers): same rows the tables used to show ----
+ var colsN=[cb('محمل','Loaded'),cb('فعلي','Actual'),cb('تحقيق','Ach'),'OEE',cb('توقف','DT h')], cwN=[54,54,46,46,50];
+ function gItems(list,withDT){
+  return list.map(function(x){
+   var v=[f1(x.target),f1(x.dz),fp(x.ach),fp(x.oee)]; if(withDT)v.push(f1(x.dtT));
+   return {k:x.k,t:x.target,a:x.dz,ach:x.ach,v:v};
+  });
+ }
+ var legend='<div class="cap sm">'+bi('رمادي = محمل • الملون = فعلي (أخضر ≥95% • برتقالي ≥80% • أحمر أقل)','grey = loaded • coloured = actual (green ≥95% • amber ≥80% • red below)')+'</div>';
+ var tot5=function(k){ return {k:k,v:[f1(R.tgG),f1(R.actF),fp(R.achF),fp(R.oeeF),f1(R.tDT)]}; };
+ var cN=legend+svgBullet(gItems(R.needles,true),{lab:52,cols:colsN,cw:cwN,total:tot5(cb('الإجمالي','TOTAL'))});
+ var cR=legend+svgBullet(gItems(R.rooms,true),{lab:52,cols:colsN,cw:cwN,total:tot5(cb('الإجمالي','TOTAL'))});
 
- var r4=R.rooms.map(function(x){return [x.k,x.uniq,f1(x.target),f1(x.dz),fp(x.ach),f1(x.dt),fp(x.oee)];});
- var rT=gTotals(R.rooms);
- var t4=[bi('الإجمالي','TOTAL'),rT.m,f1(rT.tg),f1(rT.dz),fp(pct(rT.dz,rT.tg)),f1(rT.dt),fp(rT.oee)];
- P.push(xlT(bi('4) حسب الطرقة','4) By Room'),h3,r4,t4));
+ // Customers: top 12 by loaded quantity, the rest folded into one row (totals stay exact).
+ var cs=R.custs.slice().sort(function(a,b){return b.target-a.target;});
+ var topC=cs.slice(0,12), restC=cs.slice(12), cItems=gItems(topC,false);
+ if(restC.length){
+  var rt=sumBy(restC,function(x){return x.target;}), ra=sumBy(restC,function(x){return x.dz;});
+  cItems.push({k:cb('أخرى','Others')+' ('+restC.length+')',t:rt,a:ra,ach:pct(ra,rt),c:RC.slate,v:[f1(rt),f1(ra),fp(pct(ra,rt)),'—']});
+ }
+ var cC=legend+svgBullet(cItems,{lab:96,maxc:18,cols:colsN.slice(0,4),cw:cwN.slice(0,4),total:{k:cb('الإجمالي','TOTAL'),v:[f1(R.tgG),f1(R.actF),fp(R.achF),fp(R.oeeF)]}});
 
- var h5=[bi('عميل','Customer'),bi('ماكينات','Machines'),bi('محمل','Loaded'),bi('فعلي','Actual'),bi('تحقيق','Ach%'),'OEE'];
- var r5=R.custs.map(function(x){return [x.k,x.uniq,f1(x.target),f1(x.dz),fp(x.ach),fp(x.oee)];});
- var cT=gTotals(R.custs);
- var t5=[bi('الإجمالي','TOTAL'),cT.m,f1(cT.tg),f1(cT.dz),fp(pct(cT.dz,cT.tg)),fp(cT.oee)];
- P.push(xlT(bi('5) العملاء','5) Customers'),h5,r5,t5));
+ // ---- Status ----
+ var st=svgStack(R.stCount);
+ var stBody='<div class="cap">'+bi('إجمالي الماكينات المسجلة','Total machines recorded')+': '+st.total+'</div>'+st.svg;
 
- var h6=[bi('الحالة','Status'),bi('عدد','Count')];
- var r6=[]; for(var k in R.stCount)r6.push([k,R.stCount[k]]);
- P.push(xlT(bi('6) حالة الماكينات','6) Machine Status'),h6,r6));
+ // ---- Page 2: needle, customers | room, status ----
+ P.push('<div class="pg cols"><div class="col">'+
+  repSec(bi('3) حسب الإبرة','3) By Needle'),cN)+
+  repSec(bi('4) العملاء (أعلى 12 محمل)','4) Customers (top 12 by loaded)'),cC)+
+  '</div><div class="col">'+
+  repSec(bi('5) حسب الطرقة','5) By Room'),cR)+
+  repSec(bi('6) حالة الماكينات','6) Machine Status'),stBody)+
+  '</div></div>');
 
- var h7=[bi('السبب','Cause'),bi('ساعات','Hours'),'%',bi('تراكمي','Cum%'),bi('دستة ضائعة','Lost doz'),bi('خسارة','Loss EGP')];
- var r7=R.par.map(function(x){return [x.lb,f1(x.h),fp(x.pct),fp(x.cum),f1(x.dz),f0(x.egp)];});
- var t7=[bi('الإجمالي','TOTAL'),f1(sumBy(R.par,function(x){return x.h;})),'100.0%','—',f1(sumBy(R.par,function(x){return x.dz;})),f0(sumBy(R.par,function(x){return x.egp;}))];
- P.push(xlT(bi('7) باريتو الأعطال','7) Breakdown Pareto'),h7,r7,t7));
+ // ---- Page 3: Pareto, losses by room | top-5 machines, management summary, alerts ----
+ function fold(list,n,mk){ // keep first n rows, sum the rest into one "Others" row
+  var top=list.slice(0,n), rest=list.slice(n);
+  return {top:top,rest:rest};
+ }
+ var pf=fold(R.par,10), parItems=[], prev=0;
+ pf.top.forEach(function(x){
+  parItems.push({k:x.lb,a:x.h,single:true,c:prev<0.8?RC.bad:RC.slate,v:[f1(x.h),fp(x.pct),fp(x.cum),f0(x.egp)]});
+  prev=x.cum;
+ });
+ if(pf.rest.length){
+  var oh=sumBy(pf.rest,function(x){return x.h;}), oe=sumBy(pf.rest,function(x){return x.egp;}), op=sumBy(pf.rest,function(x){return x.pct;});
+  parItems.push({k:cb('أخرى','Others')+' ('+pf.rest.length+')',a:oh,single:true,c:RC.slate,v:[f1(oh),fp(op),fp(R.par[R.par.length-1].cum),f0(oe)]});
+ }
+ var cP='<div class="cap sm">'+bi('أحمر = الأسباب التي تصنع أول 80% من التوقف','red = the causes that make the first 80% of downtime')+'</div>'+svgBullet(parItems,{lab:196,maxc:36,cols:[cb('ساعات','Hours'),'%',cb('تراكمي','Cum'),cb('خسارة ج','Loss EGP')],cw:[46,40,42,54],
+  total:{k:cb('الإجمالي','TOTAL'),v:[f1(R.tDT),'100.0%','—',f0(R.tLoss)]}});
 
- var h8=[bi('طرقة','Room'),bi('ساعات','Hours'),bi('دستة ضائعة','Lost doz'),bi('خسارة','Loss EGP')];
- var r8=R.lossRooms.map(function(x){return [x.k,f1(x.h),f1(x.dz),f0(x.egp)];});
- var t8=[bi('الإجمالي','TOTAL'),f1(sumBy(R.lossRooms,function(x){return x.h;})),f1(sumBy(R.lossRooms,function(x){return x.dz;})),f0(sumBy(R.lossRooms,function(x){return x.egp;}))];
- P.push(xlT(bi('8) خسائر حسب الطرقة','8) Losses by Room'),h8,r8,t8));
+ var lrItems=R.lossRooms.map(function(x){ return {k:x.k,a:x.egp,single:true,c:RC.bad,v:[f1(x.h),f1(x.dz),f0(x.egp)]}; });
+ var cL='<div class="cap sm">'+bi('الطرقة مرتبة حسب الخسارة (ج)','Rooms sorted by loss (EGP)')+'</div>'+svgBullet(lrItems,{lab:52,rh:14.5,cols:[cb('ساعات','Hours'),cb('دستة ضائعة','Lost doz'),cb('خسارة ج','Loss EGP')],cw:[56,66,62],
+  total:{k:cb('الإجمالي','TOTAL'),v:[f1(sumBy(R.lossRooms,function(x){return x.h;})),f1(sumBy(R.lossRooms,function(x){return x.dz;})),f0(sumBy(R.lossRooms,function(x){return x.egp;}))]}});
 
- var h9=[bi('ماكينة','Machine'),bi('ساعات','Hours'),bi('خسارة','Loss EGP')];
- var r9=R.topLoss.map(function(x){return [x.k,f1(x.h),f0(x.egp)];});
- var t9=[bi('الإجمالي','TOTAL'),f1(sumBy(R.topLoss,function(x){return x.h;})),f0(sumBy(R.topLoss,function(x){return x.egp;}))];
- P.push(xlT(bi('9) أعلى 5 ماكينات خسارة','9) Top 5 Loss Machines'),h9,r9,t9));
+ var tlItems=R.topLoss.map(function(x){ return {k:cb('ماكينة','M')+' '+x.k,a:x.egp,single:true,c:RC.bad,v:[f1(x.h),f0(x.egp)]}; });
+ var cM='<div class="cap sm">'+bi('أعلى 5 ماكينات حسب الخسارة (ج)','Top 5 machines by loss (EGP)')+'</div>'+svgBullet(tlItems,{lab:74,cols:[cb('ساعات','Hours'),cb('خسارة ج','Loss EGP')],cw:[60,70],
+  total:{k:cb('الإجمالي','TOTAL'),v:[f1(sumBy(R.topLoss,function(x){return x.h;})),f0(sumBy(R.topLoss,function(x){return x.egp;}))]}});
 
- var mx=Math.max(R.good.length,R.warn.length,R.crit.length);
- var r10=[];
- for(var i=0;i<mx;i++)r10.push([R.good[i]||'—',R.warn[i]||'—',R.crit[i]||'—']);
- P.push(xlT(bi('10) الملخص الإداري','10) Management Summary'),[bi('جيد','GOOD'),bi('تحذير','WARNING'),bi('حرج','CRITICAL')],r10));
+ function sbox(cls,title,arr){ var u=''; for(var q=0;q<arr.length;q++)u+='<li>'+arr[q]+'</li>'; return '<div class="sbx '+cls+'"><b>'+title+'</b><ul>'+u+'</ul></div>'; }
+ var sum10='<div class="sumrow">'+sbox('g','✅ '+bi('جيد','GOOD'),R.good)+sbox('w','⚠️ '+bi('تحذير','WARNING'),R.warn)+sbox('c','🚨 '+bi('حرج','CRITICAL'),R.crit)+'</div>';
+ var al='';
+ for(i=0;i<R.alerts.length;i++)al+='<li>'+R.alerts[i]+'</li>';
 
- var r11=R.alerts.map(function(a,i){return [i+1,a];});
- P.push(xlT(bi('11) أهم التنبيهات','11) Key Alerts'),['#',bi('التنبيه','Alert')],r11));
+ P.push('<div class="pg cols"><div class="col">'+
+  repSec(bi('7) باريتو الأعطال','7) Breakdown Pareto'),cP)+
+  repSec(bi('8) خسائر حسب الطرقة (كل الطرق)','8) Losses by Room (all rooms)'),cL)+
+  '</div><div class="col">'+
+  repSec(bi('9) أعلى 5 ماكينات خسارة','9) Top 5 Loss Machines'),cM)+
+  repSec(bi('10) الملخص الإداري','10) Management Summary'),sum10)+
+  repSec(bi('11) أهم التنبيهات','11) Key Alerts'),'<ol class="alist">'+al+'</ol>')+
+  '</div></div>');
 
  $('#report').innerHTML=P.join('');
 }
+
 function printReport(){
  if(!LASTR){alert(bi('ارفع ملف الإكسيل الأول','Upload the Excel file first'));return;}
  buildReport(LASTR);
@@ -1081,14 +1278,14 @@ function render(R){
   mkChart('chStatus','doughnut',stL,[{data:stV,backgroundColor:['#34d399','#f6c453','#fb923c','#f87171','#7cb8ff','#94a3b8']}]);
  }
 
- var nT=gTotals(R.needles), rT=gTotals(R.rooms), cT=gTotals(R.custs);
+ var nT=gTotals(R.needles,R), rT=gTotals(R.rooms,R), cT=gTotals(R.custs,R);
  $('#tNeedle').innerHTML=tbl(
   [bi('إبرة','Needle'),bi('ماكينات','Machines'),bi('محمل','Loaded'),bi('فعلي','Actual'),bi('تحقيق','Ach%'),bi('توقف','DT h'),'OEE'],
-  R.needles.map(function(x){return [x.k,x.uniq,f1(x.target),f1(x.dz),fp(x.ach),f1(x.dt),fp(x.oee)];}),
+  R.needles.map(function(x){return [x.k,x.uniq,f1(x.target),f1(x.dz),fp(x.ach),f1(x.dtT),fp(x.oee)];}),
   [bi('الإجمالي','TOTAL'),nT.m,f1(nT.tg),f1(nT.dz),fp(pct(nT.dz,nT.tg)),f1(nT.dt),fp(nT.oee)]);
  $('#tRoom').innerHTML=tbl(
   [bi('طرقة','Room'),bi('ماكينات','Machines'),bi('محمل','Loaded'),bi('فعلي','Actual'),bi('تحقيق','Ach%'),bi('توقف','DT h'),'OEE'],
-  R.rooms.map(function(x){return [x.k,x.uniq,f1(x.target),f1(x.dz),fp(x.ach),f1(x.dt),fp(x.oee)];}),
+  R.rooms.map(function(x){return [x.k,x.uniq,f1(x.target),f1(x.dz),fp(x.ach),f1(x.dtT),fp(x.oee)];}),
   [bi('الإجمالي','TOTAL'),rT.m,f1(rT.tg),f1(rT.dz),fp(pct(rT.dz,rT.tg)),f1(rT.dt),fp(rT.oee)]);
  $('#tCust').innerHTML=tbl(
   [bi('عميل','Customer'),bi('ماكينات','Machines'),bi('محمل','Loaded'),bi('فعلي','Actual'),bi('تحقيق','Ach%'),'OEE'],
