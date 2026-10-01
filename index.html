@@ -196,6 +196,52 @@ tr:hover td{background:rgba(246,196,83,.06)}
  body.pdf-mode .sum{display:grid}
  body.pdf-mode canvas{max-height:340px}
 }
+/* ===== v2: calm IE layout ===== */
+body::before{animation:none}
+header::after{animation:none;opacity:.35}
+.kpi::after{display:none}
+.logo-txt{animation:none}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+#tabsBar{display:flex;gap:4px;margin:6px 0 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tabbtn{background:transparent;border:0;color:var(--mut);font-family:inherit;font-weight:700;font-size:13.5px;padding:10px 18px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;transition:.2s}
+.tabbtn:hover{color:var(--txt)}
+.tabbtn.on{color:var(--cy);border-bottom-color:var(--cy)}
+.tabpane{display:none}
+.tabpane.on{display:block}
+.hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:4px 0 16px}
+.hero .kpi .v{font-size:32px}
+.hero .kpi .s{font-size:11px;line-height:1.7}
+.dl{font-size:11px;font-weight:700;padding:1px 7px;border-radius:8px;background:rgba(255,255,255,.07);white-space:nowrap}
+.dl.up{color:var(--te)}.dl.dn{color:var(--rd)}.dl.na{color:var(--mut)}
+details.fold{margin:14px 0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 14px}
+details.fold>summary{cursor:pointer;color:var(--cy);font-weight:700;font-size:13px;padding:10px 0;list-style:none}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary::before{content:'▸ ';color:var(--mut)}
+details.fold[open]>summary::before{content:'▾ '}
+details.fold .kpis{margin:6px 0 12px}
+.srcbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;color:var(--mut);font-size:12px;margin:4px 2px 8px}
+.srcbar b{color:var(--txt)}
+.cap.sm{font-size:11px;color:var(--mut);margin:0 0 6px}
+.note{font-size:11px;color:var(--mut);margin-top:8px;line-height:1.7}
+.act .row{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:center;padding:9px 4px;border-bottom:1px solid var(--line)}
+.act .rk{width:24px;height:24px;border-radius:50%;background:rgba(246,196,83,.16);color:var(--cy);font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center}
+.act .ttl{font-size:13px;font-weight:700}
+.act .sub{font-size:11px;color:var(--mut);line-height:1.6}
+.act .val{text-align:end;font-size:12px}
+.act .val b{color:var(--te);font-size:14px}
+.act h4{font-size:12px;color:var(--mut);margin:12px 0 2px;font-weight:700}
+.act .tot{display:flex;justify-content:space-between;gap:10px;margin-top:8px;padding:9px 12px;border-radius:12px;background:rgba(52,211,153,.10);border:1px solid rgba(52,211,153,.35);font-size:13px}
+.act .tot b{color:var(--te)}
+.act .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.act input[type=number]{width:64px;background:#16203a;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:5px 7px;font-family:inherit}
+.btn.sm{padding:7px 11px;font-size:12px;border-radius:10px}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#16203a;border:1px solid var(--cy);color:var(--txt);padding:10px 18px;border-radius:12px;z-index:150;font-size:13px;display:none;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+@media print{
+ body.pdf-mode #tabsBar,body.pdf-mode #toast,body.pdf-mode .srcbar,body.pdf-mode .act .tools{display:none!important}
+ body.pdf-mode .tabpane{display:block!important}
+ body.pdf-mode details.fold{border:none;padding:0}
+ body.pdf-mode details.fold>summary{display:none}
+}
 </style>
 </head>
 <body class="lang-both">
@@ -215,6 +261,7 @@ tr:hover td{background:rgba(246,196,83,.06)}
   <button class="btn ghost langbtn" data-lang="ar" onclick="setLang('ar')">AR</button>
   <button class="btn ghost langbtn" data-lang="en" onclick="setLang('en')">EN</button>
   <button class="btn ghost langbtn active" data-lang="both" onclick="setLang('both')">EN|AR</button>
+  <button class="btn ghost" onclick="loadRemote(false)" title="reload the repo file">🔄 <span class="ar">تحديث البيانات</span><span class="en">Reload data</span></button>
   <button class="btn ghost" onclick="openSettings()">⚙️ <span class="ar">الإعدادات</span><span class="en">Settings</span></button>
   <button class="btn ghost" onclick="printColorPDF()">🎨 <span class="ar">PDF بالألوان</span><span class="en">Color PDF</span></button>
   <button class="btn ghost" onclick="printReport()">🖨️ <span class="ar">تقرير شامل</span><span class="en">Full Report</span></button>
@@ -240,40 +287,68 @@ tr:hover td{background:rgba(246,196,83,.06)}
   <div><label><span class="ar">عميل</span><span class="en">Customer</span></label><select id="fCust"></select></div>
   <div><label><span class="ar">ماكينة</span><span class="en">Machine</span></label><select id="fMachine"></select></div>
   <button class="btn" onclick="refresh()">🔄 <span class="ar">تحديث</span><span class="en">Refresh</span></button>
+  <button class="btn ghost" onclick="resetFilters()">↺ <span class="ar">إعادة ضبط</span><span class="en">Reset</span></button>
  </div>
  <div id="scopeInfo" class="hidden"></div>
 
- <div class="printwrap hidden" id="kpiWrap">
-  <button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button>
-  <div class="kpis" id="kpiRow"></div>
+ <div id="appBody" class="hidden">
+ <div class="srcbar" id="srcBar"></div>
+ <div id="tabsBar">
+  <button class="tabbtn on" data-tab="overview" onclick="setTab('overview')">🏠 <span class="ar">نظرة عامة</span><span class="en">Overview</span></button>
+  <button class="tabbtn" data-tab="losses" onclick="setTab('losses')">🔻 <span class="ar">الخسائر</span><span class="en">Losses</span></button>
+  <button class="tabbtn" data-tab="machines" onclick="setTab('machines')">⚙️ <span class="ar">الماكينات</span><span class="en">Machines</span></button>
+  <button class="tabbtn" data-tab="customers" onclick="setTab('customers')">👥 <span class="ar">العملاء</span><span class="en">Customers</span></button>
  </div>
 
- <div class="grid hidden" id="chartsTop">
-  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🎯 <span class="ar">الإنتاج: المستهدف مقابل الفعلي (دستة)</span><span class="en">Production: Target vs Actual (doz)</span></h3><canvas id="chProd"></canvas></div>
-  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>⚡ <span class="ar">OEE اليومي</span><span class="en">Daily OEE</span></h3><canvas id="chOEE"></canvas></div>
-  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🧩 <span class="ar">التوافر / الأداء / الجودة</span><span class="en">Availability / Performance / Quality</span></h3><canvas id="chAPQ"></canvas></div>
-  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>⏱ <span class="ar">ساعات التوقف والخسائر</span><span class="en">Downtime Hours &amp; Losses</span></h3><canvas id="chDT"></canvas></div>
-  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>📊 <span class="ar">باريتو أسباب الأعطال</span><span class="en">Breakdown Causes Pareto</span></h3><canvas id="chPar"></canvas></div>
-  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🌀 <span class="ar">حالة الماكينات</span><span class="en">Machines Status</span></h3><canvas id="chStatus"></canvas></div>
- </div>
+ <section class="tabpane on" id="tab-overview">
+  <div class="hero" id="heroRow"></div>
+  <div class="grid">
+   <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🧮 <span class="ar">شلال فواقد OEE (دستة / جنيه)</span><span class="en">OEE Loss Waterfall (doz / EGP)</span></h3><div id="wfBody"></div></div>
+   <div class="panel"><h3>🎯 <span class="ar">أولويات الإجراءات</span><span class="en">Action Priorities</span></h3><div id="actBody"></div></div>
+  </div>
+  <div class="grid">
+   <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>📈 <span class="ar">الإنتاج: المستهدف مقابل الفعلي (دستة)</span><span class="en">Production: Target vs Actual (doz)</span></h3><canvas id="chProd"></canvas></div>
+   <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>⚡ <span class="ar">OEE اليومي</span><span class="en">Daily OEE</span></h3><canvas id="chOEE"></canvas></div>
+  </div>
+  <div class="printwrap" id="sumWrap" style="margin:14px 0"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><div class="sum" id="sumRow"></div></div>
+  <details class="fold"><summary>📋 <span class="ar">كل المؤشرات التفصيلية</span><span class="en">All detailed KPIs</span></summary>
+   <div class="printwrap" id="kpiWrap"><div class="kpis" id="kpiRow"></div></div>
+  </details>
+ </section>
 
- <div class="grid hidden" id="tablesGrid">
-  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🧵 <span class="ar">التحميل والأداء حسب الإبرة</span><span class="en">Loading &amp; Performance by Needle</span></h3><div class="tblwrap" id="tNeedle"></div></div>
-  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🏠 <span class="ar">تحليل الطرق</span><span class="en">Room Analysis</span></h3><div class="tblwrap" id="tRoom"></div></div>
-  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>👥 <span class="ar">تحليل العملاء</span><span class="en">Customers Analysis</span></h3><div class="tblwrap" id="tCust"></div></div>
-  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>💸 <span class="ar">خسائر الأعطال حسب الطرقة</span><span class="en">Losses by Room</span></h3><div class="tblwrap" id="tLossRoom"></div></div>
-  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🚨 <span class="ar">أعلى 5 ماكينات خسارة</span><span class="en">Top 5 Loss Machines</span></h3><div class="tblwrap" id="tTopLoss"></div></div>
-  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>📋 <span class="ar">جدول باريتو الأعطال</span><span class="en">Breakdown Pareto Table</span></h3><div class="tblwrap" id="tPareto"></div></div>
- </div>
+ <section class="tabpane" id="tab-losses">
+  <div class="grid">
+   <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>⏱ <span class="ar">ساعات التوقف والخسائر</span><span class="en">Downtime Hours &amp; Losses</span></h3><canvas id="chDT"></canvas></div>
+   <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>📊 <span class="ar">باريتو أسباب الأعطال</span><span class="en">Breakdown Pareto</span></h3><div id="sP"></div></div>
+  </div>
+  <div class="grid">
+   <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>💸 <span class="ar">خسائر الأعطال حسب الطرقة</span><span class="en">Losses by Room</span></h3><div id="sL"></div></div>
+   <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🚨 <span class="ar">أعلى 5 ماكينات خسارة</span><span class="en">Top 5 Loss Machines</span></h3><div id="sM"></div></div>
+  </div>
+  <details class="fold"><summary><span class="ar">جداول الأعطال التفصيلية</span><span class="en">Detailed loss tables</span></summary><div class="grid"><div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>📋 <span class="ar">جدول باريتو الأعطال</span><span class="en">Breakdown Pareto Table</span></h3><div class="tblwrap" id="tPareto"></div></div><div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>💸 <span class="ar">خسائر الأعطال حسب الطرقة</span><span class="en">Losses by Room</span></h3><div class="tblwrap" id="tLossRoom"></div></div><div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🚨 <span class="ar">أعلى 5 ماكينات خسارة</span><span class="en">Top 5 Loss Machines</span></h3><div class="tblwrap" id="tTopLoss"></div></div></div></details>
+ </section>
 
- <div class="panel hidden" style="margin:14px 0"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🗺️ <span class="ar">خريطة حرارة التحقيق (ماكينة × يوم شغل)</span><span class="en">Achievement Heatmap (Machine × Working Day)</span></h3><div class="tblwrap" id="heat"></div></div>
+ <section class="tabpane" id="tab-machines">
+  <div class="grid">
+   <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🧵 <span class="ar">حسب الإبرة</span><span class="en">By Needle</span></h3><div id="sN"></div></div>
+   <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🏠 <span class="ar">حسب الطرقة</span><span class="en">By Room</span></h3><div id="sR"></div></div>
+  </div>
+  <div class="grid">
+   <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🌀 <span class="ar">حالة الماكينات</span><span class="en">Machines Status</span></h3><canvas id="chStatus"></canvas></div>
+   <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🧩 <span class="ar">التوافر / الأداء / الجودة</span><span class="en">Availability / Performance / Quality</span></h3><canvas id="chAPQ"></canvas></div>
+  </div>
+  <details class="fold"><summary><span class="ar">خريطة حرارة التحقيق (ماكينة × يوم شغل)</span><span class="en">Achievement Heatmap (Machine × Working Day)</span></summary><div class="tblwrap" id="heat"></div></details>
+  <details class="fold"><summary><span class="ar">جداول الإبرة والطرقة</span><span class="en">Needle &amp; Room tables</span></summary><div class="grid"><div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🧵 <span class="ar">التحميل والأداء حسب الإبرة</span><span class="en">Loading &amp; Performance by Needle</span></h3><div class="tblwrap" id="tNeedle"></div></div><div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>🏠 <span class="ar">تحليل الطرق</span><span class="en">Room Analysis</span></h3><div class="tblwrap" id="tRoom"></div></div></div></details>
+ </section>
 
- <div class="printwrap hidden" id="sumWrap" style="margin:14px 0">
-  <button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button>
-  <div class="sum" id="sumRow"></div>
- </div>
+ <section class="tabpane" id="tab-customers">
+  <div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>👥 <span class="ar">العملاء (أعلى 12 محمل)</span><span class="en">Customers (top 12 by loaded)</span></h3><div id="sC"></div></div>
+  <details class="fold"><summary><span class="ar">جدول العملاء الكامل</span><span class="en">Full customers table</span></summary><div class="panel"><button class="pbtn" onclick="printSec(this.parentElement)">🖨️</button><h3>👥 <span class="ar">تحليل العملاء</span><span class="en">Customers Analysis</span></h3><div class="tblwrap" id="tCust"></div></div></details>
+ </section>
+</div>
 </main>
 
+<div id="toast"></div>
 <div id="report"></div>
 
 <div id="settings" class="modal">
@@ -284,6 +359,7 @@ tr:hover td{background:rgba(246,196,83,.06)}
    <div><label><span class="ar">هدف SC يومي</span><span class="en">SC Daily Target</span></label><input id="sSC" type="number" value="20"></div>
    <div><label><span class="ar">هدف DC يومي</span><span class="en">DC Daily Target</span></label><input id="sDC" type="number" value="10"></div>
    <div><label><span class="ar">قيمة الدستة (ج)</span><span class="en">Dozen Value (EGP)</span></label><input id="sEGP" type="number" value="150"></div>
+   <div><label><span class="ar">نسبة الاسترجاع المستهدفة %</span><span class="en">Target recovery %</span></label><input id="sRec" type="number" value="25" min="5" max="100"></div>
   </div>
   <p style="color:var(--mut);font-size:11px;margin:6px 2px"><span class="ar">التصنيف بالإبرة: كل الإبر SC عدا 2144 فهي DC (و4001-4999 احتياطياً DC). المستهدف = الكمية المحملة • الفعلي = انتاج + درجة 2.</span><span class="en">Needle-based type: all needles SC except 2144 = DC (4001-4999 fallback DC). Target = Loaded qty • Actual = Production + Grade B.</span></p>
   <div style="display:flex;gap:10px;justify-content:flex-end">
@@ -392,9 +468,12 @@ function printSec(el){
 }
 function printColorPDF(){
  document.body.classList.add('pdf-mode');
- var clean=function(){ document.body.classList.remove('pdf-mode'); window.removeEventListener('afterprint',clean); };
+ var ds=[].slice.call(document.querySelectorAll('details.fold')), was=ds.map(function(d){return d.open;});
+ ds.forEach(function(d){ d.open=true; });
+ for(var c in CH){ if(CH[c]&&CH[c].resize)CH[c].resize(); }
+ var clean=function(){ document.body.classList.remove('pdf-mode'); ds.forEach(function(d,i){ d.open=was[i]; }); setTab(CURTAB,true); window.removeEventListener('afterprint',clean); };
  window.addEventListener('afterprint',clean);
- setTimeout(function(){ window.print(); },100);
+ setTimeout(function(){ window.print(); },300);
 }
 
 /* ===== Tables ===== */
@@ -677,7 +756,7 @@ function gTotals(list,R){
  * but no loading row still gets counted as a full S.hpd, so its Performance/OEE aren't zeroed
  * out by missing loading data.
  */
-function compute(){
+function compute(ov){
  var p=$('#fPeriod').value;
  var from,to;
  var ref=$('#fDate').value?inpSerial('fDate'):DATA.maxD;
@@ -687,6 +766,7 @@ function compute(){
  else if(p==='Custom'){from=$('#fFrom').value?inpSerial('fFrom'):DATA.minD; to=$('#fTo').value?inpSerial('fTo'):DATA.maxD;}
  else{from=DATA.minD;to=DATA.maxD;}
  if(to<from){var tmp=from;from=to;to=tmp;}
+ if(ov){from=ov.from;to=ov.to;}   // v2: used by the previous-period comparison
  var fN=txt($('#fNeedle').value),fR=txt($('#fRoom').value),fC=txt($('#fCust').value),fM=txt($('#fMachine').value),fT=$('#fType').value;
  // scopeFiltered: true when a machine-defining filter (Needle/Room/Machine/Type) is active —
  // used to switch the "Total Machines" card between the whole-factory count and the
@@ -975,6 +1055,7 @@ function buildKpiCards(R){
 }
 function fmtCard(c){ return c.fmt==='fp'?fp(c.v):c.fmt==='f1'?f1(c.v):f0(c.v); }
 function mkChart(id,type,labs,ds,pctAxis,dual){
+ if(!$('#'+id))return;
  var scales={y:pctAxis?{ticks:{color:'#9aa7ba',callback:function(v){return v+'%';}},grid:{color:'rgba(255,255,255,.06)'}}:{ticks:{color:'#9aa7ba'},grid:{color:'rgba(255,255,255,.06)'}}};
  if(dual)scales.y2={position:'left',ticks:{color:'#f6c453'},grid:{drawOnChartArea:false}};
  CH[id]=new Chart($('#'+id),{type:type,data:{labels:labs,datasets:ds},options:{responsive:true,
@@ -987,7 +1068,10 @@ function mkChart(id,type,labs,ds,pctAxis,dual){
  * The full report is drawn with inline SVG (no canvas / no Chart.js) so it prints sharp, needs no
  * async rendering, and stays small. EVERY number in it comes from the same result object R that
  * feeds the on-screen KPI cards, so header, tiles, charts and totals can never disagree. */
-var RC={good:'#16a34a',warn:'#d97706',bad:'#dc2626',blue:'#2563eb',vio:'#7c3aed',gray:'#d1d5db',slate:'#94a3b8',ink:'#111827',mute:'#6b7280'};
+var RCL={good:'#16a34a',warn:'#d97706',bad:'#dc2626',blue:'#2563eb',vio:'#7c3aed',gray:'#d1d5db',slate:'#94a3b8',ink:'#111827',mute:'#6b7280',stripe:'#f3f4f6',sep:'#9ca3af',grid:'#e5e7eb',bg:'#ffffff'};
+var RCD={good:'#34d399',warn:'#fb923c',bad:'#f87171',blue:'#7cb8ff',vio:'#c4b5fd',gray:'rgba(255,255,255,.16)',slate:'#64748b',ink:'#eef2f7',mute:'#9aa7ba',stripe:'rgba(255,255,255,.045)',sep:'rgba(255,255,255,.28)',grid:'rgba(255,255,255,.09)',bg:'#0d1424'};
+var RC=RCL; // charts read RC at draw time -> withTheme(true, fn) draws them for the dark screen
+function withTheme(dark,fn){ var o=RC; RC=dark?RCD:RCL; try{ return fn(); } finally{ RC=o; } }
 var KCOL={'var(--te)':'#15803d','var(--am)':'#b45309','var(--rd)':'#b91c1c','var(--cy)':'#a16207','var(--bl)':'#1d4ed8','var(--vi)':'#6d28d9','var(--txt)':'#111827'};
 function cb(ar,en){ return LANG==='ar'?ar:en; } // text INSIDE svg charts: Arabic-only or English-only (no mixed bidi)
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -1006,10 +1090,10 @@ function svgBullet(items,o){
  function cx(j){ var x=W-6; for(var q=cw.length-1;q>j;q--)x-=cw[q]; return x; } // right edge of column j
  var s=SVGH+'viewBox="0 0 '+W+' '+H+'">';
  for(j=0;j<cols.length;j++)s+='<text x="'+cx(j)+'" y="9" font-size="7" text-anchor="end" fill="'+RC.mute+'">'+esc(cols[j])+'</text>';
- s+='<line x1="0" y1="11.5" x2="'+W+'" y2="11.5" stroke="#9ca3af" stroke-width=".6"/>';
+ s+='<line x1="0" y1="11.5" x2="'+W+'" y2="11.5" stroke="'+RC.sep+'" stroke-width=".6"/>';
  for(i=0;i<items.length;i++){
   var it=items[i], y=top+i*rh;
-  if(i%2===0)s+='<rect x="0" y="'+y+'" width="'+W+'" height="'+rh+'" fill="#f3f4f6"/>';
+  if(i%2===0)s+='<rect x="0" y="'+y+'" width="'+W+'" height="'+rh+'" fill="'+RC.stripe+'"/>';
   s+='<text x="'+lab+'" y="'+(y+rh-4.5)+'" font-size="8.8" text-anchor="end" fill="'+RC.ink+'">'+esc(trunc(it.k,o.maxc||16))+'</text>';
   if(it.single){
    s+='<rect x="'+bx+'" y="'+(y+2.5)+'" width="'+Math.max(0,it.a/mx*bw)+'" height="'+(rh-5)+'" fill="'+(it.c||RC.blue)+'"/>';
@@ -1021,7 +1105,7 @@ function svgBullet(items,o){
  }
  if(o.total){
   var yt=top+items.length*rh;
-  s+='<line x1="0" y1="'+(yt+.5)+'" x2="'+W+'" y2="'+(yt+.5)+'" stroke="#111827" stroke-width="1.1"/>';
+  s+='<line x1="0" y1="'+(yt+.5)+'" x2="'+W+'" y2="'+(yt+.5)+'" stroke="'+RC.ink+'" stroke-width="1.1"/>';
   s+='<text x="'+lab+'" y="'+(yt+rh-4)+'" font-size="8.8" font-weight="700" text-anchor="end" fill="'+RC.ink+'">'+esc(o.total.k)+'</text>';
   for(j=0;j<cw.length;j++)s+='<text x="'+cx(j)+'" y="'+(yt+rh-4)+'" font-size="8.5" font-weight="700" text-anchor="end" fill="'+RC.ink+'">'+esc(o.total.v[j])+'</text>';
  }
@@ -1047,7 +1131,7 @@ function svgLines(o){
  var s=SVGH+'viewBox="0 0 '+W+' '+H+'">';
  for(var g=nr.lo;g<=nr.hi+nr.st*1e-6;g+=nr.st){
   var yy=Y(g);
-  s+='<line x1="'+L+'" y1="'+yy+'" x2="'+(W-Rr)+'" y2="'+yy+'" stroke="#e5e7eb" stroke-width=".7"/>';
+  s+='<line x1="'+L+'" y1="'+yy+'" x2="'+(W-Rr)+'" y2="'+yy+'" stroke="'+RC.grid+'" stroke-width=".7"/>';
   s+='<text x="'+(L-3)+'" y="'+(yy+2.8)+'" font-size="7.3" text-anchor="end" fill="'+RC.mute+'">'+(o.pct?Math.round(g)+'%':f0(g))+'</text>';
  }
  var step=Math.ceil(n/9);
@@ -1070,7 +1154,7 @@ function svgLines(o){
  var ms=o.marks||[];
  for(k=0;k<ms.length;k++){
   var m=ms[k], px=X(m.i), py=Y(m.v), late=m.i>n*.6;
-  s+='<circle cx="'+px+'" cy="'+py+'" r="3.4" fill="#fff" stroke="'+m.c+'" stroke-width="1.8"/>';
+  s+='<circle cx="'+px+'" cy="'+py+'" r="3.4" fill="'+RC.bg+'" stroke="'+m.c+'" stroke-width="1.8"/>';
   s+='<text x="'+(late?px-2:px+2)+'" y="'+(m.dn?py+12:py-6)+'" font-size="7.8" font-weight="700" text-anchor="'+(late?'end':'start')+'" fill="'+m.c+'">'+esc(m.txt)+'</text>';
  }
  return s+'</svg>';
@@ -1098,12 +1182,62 @@ function svgStack(counts){
 
 function repSec(title,body){ return '<div class="sec"><h3>'+title+'</h3>'+body+'</div>'; }
 
+function buildGroupCharts(R){
+ // ---- Group charts (needle / room / customers): same rows the tables used to show ----
+ var colsN=[cb('محمل','Loaded'),cb('فعلي','Actual'),cb('تحقيق','Ach'),'OEE',cb('توقف','DT h')], cwN=[54,54,46,46,50];
+ function gItems(list,withDT){
+  return list.map(function(x){
+   var v=[f1(x.target),f1(x.dz),fp(x.ach),fp(x.oee)]; if(withDT)v.push(f1(x.dtT));
+   return {k:x.k,t:x.target,a:x.dz,ach:x.ach,v:v};
+  });
+ }
+ var legend='<div class="cap sm">'+bi('رمادي = محمل • الملون = فعلي (أخضر ≥95% • برتقالي ≥80% • أحمر أقل)','grey = loaded • coloured = actual (green ≥95% • amber ≥80% • red below)')+'</div>';
+ var tot5=function(k){ return {k:k,v:[f1(R.tgG),f1(R.actF),fp(R.achF),fp(R.oeeF),f1(R.tDT)]}; };
+ var cN=legend+svgBullet(gItems(R.needles,true),{lab:52,cols:colsN,cw:cwN,total:tot5(cb('الإجمالي','TOTAL'))});
+ var cR=legend+svgBullet(gItems(R.rooms,true),{lab:52,cols:colsN,cw:cwN,total:tot5(cb('الإجمالي','TOTAL'))});
+
+ // Customers: top 12 by loaded quantity, the rest folded into one row (totals stay exact).
+ var cs=R.custs.slice().sort(function(a,b){return b.target-a.target;});
+ var topC=cs.slice(0,12), restC=cs.slice(12), cItems=gItems(topC,false);
+ if(restC.length){
+  var rt=sumBy(restC,function(x){return x.target;}), ra=sumBy(restC,function(x){return x.dz;});
+  cItems.push({k:cb('أخرى','Others')+' ('+restC.length+')',t:rt,a:ra,ach:pct(ra,rt),c:RC.slate,v:[f1(rt),f1(ra),fp(pct(ra,rt)),'—']});
+ }
+ var cC=legend+svgBullet(cItems,{lab:96,maxc:18,cols:colsN.slice(0,4),cw:cwN.slice(0,4),total:{k:cb('الإجمالي','TOTAL'),v:[f1(R.tgG),f1(R.actF),fp(R.achF),fp(R.oeeF)]}});
+
+ function fold(list,n,mk){ // keep first n rows, sum the rest into one "Others" row
+  var top=list.slice(0,n), rest=list.slice(n);
+  return {top:top,rest:rest};
+ }
+ var pf=fold(R.par,10), parItems=[], prev=0;
+ pf.top.forEach(function(x){
+  parItems.push({k:x.lb,a:x.h,single:true,c:prev<0.8?RC.bad:RC.slate,v:[f1(x.h),fp(x.pct),fp(x.cum),f0(x.egp)]});
+  prev=x.cum;
+ });
+ if(pf.rest.length){
+  var oh=sumBy(pf.rest,function(x){return x.h;}), oe=sumBy(pf.rest,function(x){return x.egp;}), op=sumBy(pf.rest,function(x){return x.pct;});
+  parItems.push({k:cb('أخرى','Others')+' ('+pf.rest.length+')',a:oh,single:true,c:RC.slate,v:[f1(oh),fp(op),fp(R.par[R.par.length-1].cum),f0(oe)]});
+ }
+ var cP='<div class="cap sm">'+bi('أحمر = الأسباب التي تصنع أول 80% من التوقف','red = the causes that make the first 80% of downtime')+'</div>'+svgBullet(parItems,{lab:196,maxc:36,cols:[cb('ساعات','Hours'),'%',cb('تراكمي','Cum'),cb('خسارة ج','Loss EGP')],cw:[46,40,42,54],
+  total:{k:cb('الإجمالي','TOTAL'),v:[f1(R.tDT),'100.0%','—',f0(R.tLoss)]}});
+
+ var lrItems=R.lossRooms.map(function(x){ return {k:x.k,a:x.egp,single:true,c:RC.bad,v:[f1(x.h),f1(x.dz),f0(x.egp)]}; });
+ var cL='<div class="cap sm">'+bi('الطرقة مرتبة حسب الخسارة (ج)','Rooms sorted by loss (EGP)')+'</div>'+svgBullet(lrItems,{lab:52,rh:14.5,cols:[cb('ساعات','Hours'),cb('دستة ضائعة','Lost doz'),cb('خسارة ج','Loss EGP')],cw:[56,66,62],
+  total:{k:cb('الإجمالي','TOTAL'),v:[f1(sumBy(R.lossRooms,function(x){return x.h;})),f1(sumBy(R.lossRooms,function(x){return x.dz;})),f0(sumBy(R.lossRooms,function(x){return x.egp;}))]}});
+
+ var tlItems=R.topLoss.map(function(x){ return {k:cb('ماكينة','M')+' '+x.k,a:x.egp,single:true,c:RC.bad,v:[f1(x.h),f0(x.egp)]}; });
+ var cM='<div class="cap sm">'+bi('أعلى 5 ماكينات حسب الخسارة (ج)','Top 5 machines by loss (EGP)')+'</div>'+svgBullet(tlItems,{lab:74,cols:[cb('ساعات','Hours'),cb('خسارة ج','Loss EGP')],cw:[60,70],
+  total:{k:cb('الإجمالي','TOTAL'),v:[f1(sumBy(R.topLoss,function(x){return x.h;})),f0(sumBy(R.topLoss,function(x){return x.egp;}))]}});
+
+ return {cN:cN,cR:cR,cC:cC,cP:cP,cL:cL,cM:cM};
+}
+
 function buildReport(R){
  var P=[], i, cards=buildKpiCards(R);
 
  // ---- Header: every figure here is the same value the KPI tiles / charts below show ----
  var head='<div class="rhead"><h2>SOLO — Knitting Dept. Operations Report — '+esc(DATA.name)+'</h2>';
- head+='<div class="rmeta"><b>'+bi('الفترة','Period')+':</b> '+dFull(R.from)+' → '+dFull(R.to)+' &nbsp;|&nbsp; <b>'+bi('أيام العمل','Working days')+':</b> '+R.daily.length+' &nbsp;|&nbsp; <b>'+bi('ماكينات عملت','Machines used')+':</b> '+R.machUniq+' / '+R.scopeTotal+'</div>';
+ head+='<div class="rmeta"><b>'+bi('الفترة','Period')+':</b> '+dRange(R)+' &nbsp;|&nbsp; <b>'+bi('أيام العمل','Working days')+':</b> '+R.daily.length+' &nbsp;|&nbsp; <b>'+bi('ماكينات عملت','Machines used')+':</b> '+R.machUniq+' / '+R.scopeTotal+'</div>';
  var hk=[
   [bi('المحمل (المستهدف)','Loaded (Target)'),f1(R.tgG)+' '+bi('دستة','doz')],
   [bi('الفعلي','Actual'),f1(R.actF)+' '+bi('دستة','doz')],
@@ -1149,27 +1283,7 @@ function buildReport(R){
   '<div><div class="cap">'+bi('ساعات التوقف اليومية','Daily downtime (h)')+' — Σ '+f1(sD)+' '+bi('س','h')+'</div>'+ch3+'</div></div>';
  P.push(repSec(bi('2) الأداء اليومي','2) Daily Performance'),d2));
 
- // ---- Group charts (needle / room / customers): same rows the tables used to show ----
- var colsN=[cb('محمل','Loaded'),cb('فعلي','Actual'),cb('تحقيق','Ach'),'OEE',cb('توقف','DT h')], cwN=[54,54,46,46,50];
- function gItems(list,withDT){
-  return list.map(function(x){
-   var v=[f1(x.target),f1(x.dz),fp(x.ach),fp(x.oee)]; if(withDT)v.push(f1(x.dtT));
-   return {k:x.k,t:x.target,a:x.dz,ach:x.ach,v:v};
-  });
- }
- var legend='<div class="cap sm">'+bi('رمادي = محمل • الملون = فعلي (أخضر ≥95% • برتقالي ≥80% • أحمر أقل)','grey = loaded • coloured = actual (green ≥95% • amber ≥80% • red below)')+'</div>';
- var tot5=function(k){ return {k:k,v:[f1(R.tgG),f1(R.actF),fp(R.achF),fp(R.oeeF),f1(R.tDT)]}; };
- var cN=legend+svgBullet(gItems(R.needles,true),{lab:52,cols:colsN,cw:cwN,total:tot5(cb('الإجمالي','TOTAL'))});
- var cR=legend+svgBullet(gItems(R.rooms,true),{lab:52,cols:colsN,cw:cwN,total:tot5(cb('الإجمالي','TOTAL'))});
-
- // Customers: top 12 by loaded quantity, the rest folded into one row (totals stay exact).
- var cs=R.custs.slice().sort(function(a,b){return b.target-a.target;});
- var topC=cs.slice(0,12), restC=cs.slice(12), cItems=gItems(topC,false);
- if(restC.length){
-  var rt=sumBy(restC,function(x){return x.target;}), ra=sumBy(restC,function(x){return x.dz;});
-  cItems.push({k:cb('أخرى','Others')+' ('+restC.length+')',t:rt,a:ra,ach:pct(ra,rt),c:RC.slate,v:[f1(rt),f1(ra),fp(pct(ra,rt)),'—']});
- }
- var cC=legend+svgBullet(cItems,{lab:96,maxc:18,cols:colsN.slice(0,4),cw:cwN.slice(0,4),total:{k:cb('الإجمالي','TOTAL'),v:[f1(R.tgG),f1(R.actF),fp(R.achF),fp(R.oeeF)]}});
+ var G=buildGroupCharts(R), cN=G.cN, cR=G.cR, cC=G.cC;
 
  // ---- Status ----
  var st=svgStack(R.stCount);
@@ -1185,29 +1299,7 @@ function buildReport(R){
   '</div></div>');
 
  // ---- Page 3: Pareto, losses by room | top-5 machines, management summary, alerts ----
- function fold(list,n,mk){ // keep first n rows, sum the rest into one "Others" row
-  var top=list.slice(0,n), rest=list.slice(n);
-  return {top:top,rest:rest};
- }
- var pf=fold(R.par,10), parItems=[], prev=0;
- pf.top.forEach(function(x){
-  parItems.push({k:x.lb,a:x.h,single:true,c:prev<0.8?RC.bad:RC.slate,v:[f1(x.h),fp(x.pct),fp(x.cum),f0(x.egp)]});
-  prev=x.cum;
- });
- if(pf.rest.length){
-  var oh=sumBy(pf.rest,function(x){return x.h;}), oe=sumBy(pf.rest,function(x){return x.egp;}), op=sumBy(pf.rest,function(x){return x.pct;});
-  parItems.push({k:cb('أخرى','Others')+' ('+pf.rest.length+')',a:oh,single:true,c:RC.slate,v:[f1(oh),fp(op),fp(R.par[R.par.length-1].cum),f0(oe)]});
- }
- var cP='<div class="cap sm">'+bi('أحمر = الأسباب التي تصنع أول 80% من التوقف','red = the causes that make the first 80% of downtime')+'</div>'+svgBullet(parItems,{lab:196,maxc:36,cols:[cb('ساعات','Hours'),'%',cb('تراكمي','Cum'),cb('خسارة ج','Loss EGP')],cw:[46,40,42,54],
-  total:{k:cb('الإجمالي','TOTAL'),v:[f1(R.tDT),'100.0%','—',f0(R.tLoss)]}});
-
- var lrItems=R.lossRooms.map(function(x){ return {k:x.k,a:x.egp,single:true,c:RC.bad,v:[f1(x.h),f1(x.dz),f0(x.egp)]}; });
- var cL='<div class="cap sm">'+bi('الطرقة مرتبة حسب الخسارة (ج)','Rooms sorted by loss (EGP)')+'</div>'+svgBullet(lrItems,{lab:52,rh:14.5,cols:[cb('ساعات','Hours'),cb('دستة ضائعة','Lost doz'),cb('خسارة ج','Loss EGP')],cw:[56,66,62],
-  total:{k:cb('الإجمالي','TOTAL'),v:[f1(sumBy(R.lossRooms,function(x){return x.h;})),f1(sumBy(R.lossRooms,function(x){return x.dz;})),f0(sumBy(R.lossRooms,function(x){return x.egp;}))]}});
-
- var tlItems=R.topLoss.map(function(x){ return {k:cb('ماكينة','M')+' '+x.k,a:x.egp,single:true,c:RC.bad,v:[f1(x.h),f0(x.egp)]}; });
- var cM='<div class="cap sm">'+bi('أعلى 5 ماكينات حسب الخسارة (ج)','Top 5 machines by loss (EGP)')+'</div>'+svgBullet(tlItems,{lab:74,cols:[cb('ساعات','Hours'),cb('خسارة ج','Loss EGP')],cw:[60,70],
-  total:{k:cb('الإجمالي','TOTAL'),v:[f1(sumBy(R.topLoss,function(x){return x.h;})),f0(sumBy(R.topLoss,function(x){return x.egp;}))]}});
+ var G=buildGroupCharts(R), cP=G.cP, cL=G.cL, cM=G.cM;
 
  function sbox(cls,title,arr){ var u=''; for(var q=0;q<arr.length;q++)u+='<li>'+arr[q]+'</li>'; return '<div class="sbx '+cls+'"><b>'+title+'</b><ul>'+u+'</ul></div>'; }
  var sum10='<div class="sumrow">'+sbox('g','✅ '+bi('جيد','GOOD'),R.good)+sbox('w','⚠️ '+bi('تحذير','WARNING'),R.warn)+sbox('c','🚨 '+bi('حرج','CRITICAL'),R.crit)+'</div>';
@@ -1238,9 +1330,9 @@ function printReport(){
 function render(R){
  LASTR=R;
  $('#drop').classList.add('hidden');
- var ids=['filtersBar','kpiWrap','chartsTop','tablesGrid','sumWrap','scopeInfo'];
+ var ids=['filtersBar','appBody','scopeInfo'];
  for(var i=0;i<ids.length;i++){ var el=$('#'+ids[i]); if(el)el.classList.remove('hidden'); }
- $('#scopeInfo').textContent='📅 '+bi('الفترة','Period')+': '+dFull(R.from)+' → '+dFull(R.to)+'  •  '+bi('أيام شغل','working days')+': '+R.daily.length+'  •  '+bi('صفوف','rows')+': '+R.counts.L+' / '+R.counts.P+' / '+R.counts.D;
+ $('#scopeInfo').textContent='📅 '+bi('الفترة','Period')+': '+dRange(R)+'  •  '+bi('أيام شغل','working days')+': '+R.daily.length+'  •  '+bi('صفوف','rows')+': '+R.counts.L+' / '+R.counts.P+' / '+R.counts.D+(R.prev?'  •  '+bi('مقارنة بـ','vs')+' '+dFull(R.prevRange.from)+' → '+dFull(R.prevRange.to):'  •  '+bi('لا توجد فترة سابقة للمقارنة','no previous period to compare'));
  var kh='';
  var cards=buildKpiCards(R);
  for(var ci=0;ci<cards.length;ci++)kh+=card(cards[ci].t,cards[ci].v,cards[ci].s,cards[ci].fmt,cards[ci].color,cards[ci].bar);
@@ -1333,24 +1425,308 @@ function render(R){
  for(i=0;i<R.alerts.length;i++)sm+='<li>• '+R.alerts[i]+'</li>';
  sm+='</ul></div>';
  $('#sumRow').innerHTML=sm;
+ renderV2(R);
+}
+
+/* ===== v2 ===== */
+/* ===================================================================================
+ * v2 — IE layer (nothing below touches the OEE / loss calculations in compute()):
+ *   1) Data auto-load + auto-update from the repo, last file remembered on the device
+ *   2) Saved filters / settings / language / tab (localStorage)
+ *   3) Previous-period comparison (same compute(), just another date range)
+ *   4) OEE loss waterfall  (Loaded -> Availability -> Performance -> Quality -> OEE output)
+ *   5) Auto action summary (top unplanned causes, owner, recoverable EGP) + WhatsApp text
+ *   6) Tabs: Overview / Losses / Machines / Customers
+ * =================================================================================== */
+var REMOTE_URL='./OEE8.xlsx';          // the file the dashboard loads by itself — replace it in the repo to update the data
+var POLL_MS=10*60*1000;                // how often an open dashboard checks the repo for a newer file
+var LS_KEY='solo_oee_v2';
+var FILTER_IDS=['fPeriod','fDate','fFrom','fTo','fType','fNeedle','fRoom','fCust','fMachine'];
+var CURTAB='overview', CUR={}, SAVED=null, CAN_SAVE=false;
+S.recover=0.25;                        // "what if we cut each top cause by X%" — an assumption, editable in the panel
+function ab(ar,en){ return LANG==='en'?en:ar; }   // single-language text (WhatsApp text, SVG labels)
+
+/* ---- suggested owner per downtime cause code (edit freely) ---- */
+var OWNERS={'12':['التخطيط / المشتريات','Planning / Purchasing'],'9':['التخطيط','Planning'],'16':['التخطيط','Planning'],
+ '6':['الصيانة — كهرباء','Maintenance — Electrical'],'10':['الصيانة — ميكانيكا','Maintenance — Mechanical'],'20':['المخازن / الصيانة','Stores / Maintenance'],
+ '4':['التطوير / العينات','Sampling / R&D'],'11':['الإنتاج','Production'],'3':['الخدمات المساعدة','Utilities'],'2':['الخدمات المساعدة','Utilities'],
+ '15':['الجودة','Quality'],'22':['الموارد البشرية','HR'],'13':['الموارد البشرية','HR'],'5':['الصيانة','Maintenance'],'7':['الصيانة','Maintenance'],'19':['الصيانة','Maintenance']};
+function dRange(R){ return dFull(Math.max(R.from,DATA.minD))+' → '+dFull(Math.min(R.to,DATA.maxD)); }   // show the real data span, not the calendar month edges
+function causeCode(lb){ var m=/^\s*(\d+)/.exec(lb||''); return m?m[1]:''; }
+function ownerOf(lb){ var o=OWNERS[causeCode(lb)]; return o?ab(o[0],o[1]):'—'; }
+
+/* ---- key/value store in IndexedDB (remembers the last loaded Excel on this device) ---- */
+function kvOpen(){ return new Promise(function(res,rej){ try{ if(typeof indexedDB==='undefined')return rej(new Error('no idb')); var q=indexedDB.open('solo_oee',1); q.onupgradeneeded=function(){ q.result.createObjectStore('kv'); }; q.onsuccess=function(){ res(q.result); }; q.onerror=function(){ rej(q.error); }; }catch(e){ rej(e); } }); }
+function kvPut(k,v){ return kvOpen().then(function(db){ return new Promise(function(res,rej){ var tx=db.transaction('kv','readwrite'); tx.objectStore('kv').put(v,k); tx.oncomplete=function(){res(true);}; tx.onerror=function(){rej(tx.error);}; }); }).catch(function(){ return false; }); }
+function kvGet(k){ return kvOpen().then(function(db){ return new Promise(function(res,rej){ var q=db.transaction('kv').objectStore('kv').get(k); q.onsuccess=function(){res(q.result);}; q.onerror=function(){rej(q.error);}; }); }).catch(function(){ return null; }); }
+
+/* ---- toast ---- */
+var toastT=null;
+function toast(msg){ var t=$('#toast'); if(!t)return; t.textContent=msg; t.style.display='block'; clearTimeout(toastT); toastT=setTimeout(function(){ t.style.display='none'; },4200); }
+
+/* ---- saved state ---- */
+function loadSaved(){ try{ SAVED=JSON.parse(localStorage.getItem(LS_KEY)||'null'); }catch(e){ SAVED=null; } }
+function saveState(){
+ if(!CAN_SAVE)return;
+ try{
+  var f={}; FILTER_IDS.forEach(function(id){ var el=$('#'+id); if(el)f[id]=el.value; });
+  localStorage.setItem(LS_KEY,JSON.stringify({f:f,lang:LANG,tab:CURTAB,s:{total:S.total,sc:S.sc,dc:S.dc,egp:S.egp,rec:S.recover}}));
+ }catch(e){}
+}
+function restoreSettings(){
+ if(!SAVED)return;
+ var s=SAVED.s||{};
+ if(s.total)S.total=s.total; if(s.sc)S.sc=s.sc; if(s.dc)S.dc=s.dc; if(s.egp)S.egp=s.egp; if(s.rec)S.recover=s.rec;
+ $('#sTotal').value=S.total; $('#sSC').value=S.sc; $('#sDC').value=S.dc; $('#sEGP').value=S.egp; $('#sRec').value=Math.round(S.recover*100);
+ if(SAVED.tab)setTab(SAVED.tab,true);
+ if(SAVED.lang&&SAVED.lang!==LANG)setLang(SAVED.lang);
+}
+function restoreFilters(){
+ if(SAVED&&SAVED.f){
+  FILTER_IDS.forEach(function(id){ var el=$('#'+id); if(!el||SAVED.f[id]==null)return; el.value=SAVED.f[id]; if(el.value!==SAVED.f[id])el.value=''; });
+ }else{ $('#fPeriod').value='Month'; }   // first visit: latest month (enables month-over-month)
+}
+function resetFilters(){
+ FILTER_IDS.forEach(function(id){ var el=$('#'+id); if(el)el.value=''; });
+ $('#fPeriod').value='Month';
+ refresh();
+}
+
+/* ---- tabs ---- */
+function setTab(id,noSave){
+ CURTAB=id;
+ var ps=document.querySelectorAll('.tabpane'), bs=document.querySelectorAll('.tabbtn'), i;
+ for(i=0;i<ps.length;i++)ps[i].classList.toggle('on',ps[i].id==='tab-'+id);
+ for(i=0;i<bs.length;i++)bs[i].classList.toggle('on',bs[i].getAttribute('data-tab')===id);
+ for(var c in CH){ if(CH[c]&&CH[c].resize)CH[c].resize(); }   // charts built while hidden need a resize
+ if(!noSave)saveState();
+}
+
+/* ---- previous-period comparison: same compute(), another date range ---- */
+function prevRange(R){
+ var p=$('#fPeriod').value, from=R.from, to=R.to, n=to-from+1;
+ if(p==='All')return null;                                   // whole file has nothing before it
+ if(p==='Month'){
+  var d=new Date(Math.round((from-25569)*86400000));
+  var pf=Math.floor(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()-1,1)/86400000)+25569;
+  return {from:pf,to:from-1};
+ }
+ if(p==='Day'){                                              // Day: the last day BEFORE it that actually has data (skips Fridays / gaps)
+  var ds=dataDays(), x=from-1;
+  while(x>=DATA.minD&&!ds[x])x--;
+  return x>=DATA.minD?{from:x,to:x}:null;
+ }
+ return {from:from-n,to:from-1};                             // Week / Custom: the n days right before
+}
+var _days=null;
+function dataDays(){
+ var n=DATA.load.length+DATA.prod.length;
+ if(!_days||_days.n!==n){ var s={}, i; for(i=0;i<DATA.load.length;i++)s[DATA.load[i].d]=1; for(i=0;i<DATA.prod.length;i++)s[DATA.prod[i].d]=1; _days={n:n,s:s}; }
+ return _days.s;
+}
+function withPrev(R){
+ R.prev=null; R.prevRange=null;
+ try{
+  var pr=prevRange(R);
+  if(pr&&pr.to>=DATA.minD){ var P=compute(pr); if(P&&P.daily.length){ R.prev=P; R.prevRange=pr; } }
+ }catch(e){}
+ return R;
+}
+// kind: 'pp' = percentage points (ratios) | 'rel' = relative % | a leading '-' means "lower is better"
+function dHtml(cur,prev,kind){
+ if(prev==null||!isFinite(prev)||cur==null)return '';
+ var inv=kind.charAt(0)==='-', k=inv?kind.slice(1):kind, d, txt;
+ if(k==='pp'){ d=(cur-prev)*100; txt=(d>=0?'+':'')+f1(d)+' '+ab('نقطة','pt'); }
+ else{ if(!prev)return ''; d=(cur-prev)/Math.abs(prev)*100; txt=(d>=0?'+':'')+f1(d)+'%'; }
+ var flat=Math.abs(d)<0.05, good=inv?d<0:d>0;
+ return '<span class="dl '+(flat?'na':good?'up':'dn')+'">'+(flat?'▬':d>0?'▲':'▼')+' '+txt+'</span>';
+}
+
+/* ---- hero KPIs (volume metrics are compared PER WORKING DAY so a partial month is fair) ---- */
+function heroCards(R){
+ var P=R.prev, nd=R.daily.length||1, pn=P?(P.daily.length||1):1;
+ var vs=P?' <span style="color:var(--mut)">'+bi('عن الفترة السابقة','vs previous')+'</span>':'';
+ var perDay=' <span style="color:var(--mut)">('+bi('لكل يوم عمل','per working day')+')</span>';
+ function sub(base,d,extra){ return base+(d?'<br>'+d+vs+(extra||''):''); }
+ var h='';
+ h+=card(bi('التحقيق','Achievement'),R.achF,sub(bi('فعلي / محمل','Actual / Loaded'),P?dHtml(R.achF,P.achF,'pp'):''),'fp',kcColor(R.achF/S.goodAch),R.achF);
+ h+=card('OEE',R.oeeF,sub('A '+fp(R.avF)+' × P '+fp(R.pfFC)+' × Q '+fp(R.qlF),P?dHtml(R.oeeF,P.oeeF,'pp'):''),'fp',R.oeeF>=S.goodOEE?'var(--te)':R.oeeF>=S.warnOEE?'var(--am)':'var(--rd)',R.oeeF);
+ h+=card(bi('الإنتاج الفعلي','Actual Production'),R.actF,sub(bi('من','of')+' '+f0(R.tgG)+' '+bi('دستة محمّلة','doz loaded'),P?dHtml(R.actF/nd,P.actF/pn,'rel'):'',perDay),'f1','var(--te)',null);
+ h+=card(bi('ساعات التوقف','Downtime Hours'),R.tDT,sub(f1(R.tDT/nd)+' '+bi('س/يوم','h/day'),P?dHtml(R.tDT/nd,P.tDT/pn,'-rel'):'',perDay),'f1','var(--am)',null);
+ h+=card(bi('خسائر الأعطال (ج)','Breakdown Losses (EGP)'),R.tLoss,sub(f0(R.tLoss/nd)+' '+bi('ج/يوم','EGP/day'),P?dHtml(R.tLoss/nd,P.tLoss/pn,'-rel'):'',perDay),'f0','var(--rd)',null);
+ h+=card(bi('استغلال الطاقة','Utilization'),R.utilM,sub(R.machUniq+' '+bi('من','of')+' '+R.scopeTotal+' '+bi('ماكينة','machines'),P?dHtml(R.utilM,P.utilM,'pp'):''),'fp',R.utilM>=S.goodUtil?'var(--te)':'var(--am)',R.utilM);
+ return h;
+}
+
+/* ---- OEE loss waterfall: same A x P x Q as the KPI, shown as dozens and EGP ---- */
+function svgWaterfall(R){
+ var T=R.tgG, av=R.avF, pf=R.pfFC, ql=R.qlF, s1=T*av, s2=s1*pf, s3=s2*ql;
+ if(!(T>0))return '';
+ var steps=[
+  {k:ab('المحمل','Loaded'),a:0,b:T,c:RC.blue,tot:1},
+  {k:ab('فاقد التوافر','Availability loss'),a:s1,b:T,c:RC.bad,pp:1-av,lvl:T},
+  {k:ab('فاقد الأداء','Performance loss'),a:s2,b:s1,c:RC.warn,pp:av*(1-pf),lvl:s1},
+  {k:ab('فاقد الجودة','Quality loss'),a:s3,b:s2,c:RC.vio,pp:av*pf*(1-ql),lvl:s2},
+  {k:ab('إنتاج OEE','OEE output'),a:0,b:s3,c:RC.good,tot:1,lvl:s3}];
+ var W=560,H=280,top=44,bot=54, lo=Math.max(0,s3-(T-s3)*1.3);
+ function Y(v){ return top+(H-top-bot)*(1-(Math.max(v,lo)-lo)/(T-lo)); }
+ var slot=W/steps.length, bw=slot*.58, s=SVGH+'viewBox="0 0 '+W+' '+H+'">', i, st, x, y1, y2;
+ s+='<line x1="0" y1="'+Y(lo)+'" x2="'+W+'" y2="'+Y(lo)+'" stroke="'+RC.sep+'" stroke-width=".8"/>';
+ for(i=0;i<steps.length;i++){
+  st=steps[i]; x=slot*i+(slot-bw)/2; y1=Y(st.b); y2=Y(st.a);
+  if(i>0){ var ly=Y(st.lvl); s+='<line x1="'+(slot*(i-1)+(slot+bw)/2)+'" y1="'+ly+'" x2="'+x+'" y2="'+ly+'" stroke="'+RC.sep+'" stroke-width=".8" stroke-dasharray="3 3"/>'; }
+  s+='<rect x="'+x+'" y="'+y1+'" width="'+bw+'" height="'+Math.max(2,y2-y1)+'" rx="3" fill="'+st.c+'"/>';
+  var cx=x+bw/2, v1, v2;
+  if(st.tot){ v1=f0(st.b); v2=(i===0)?'100%':fp(R.oeeF); }
+  else{ v1='−'+f0(st.b-st.a); v2='−'+f0((st.b-st.a)*S.egp)+' '+ab('ج','EGP'); }
+  s+='<text x="'+cx+'" y="'+(y1-17)+'" font-size="12" font-weight="700" text-anchor="middle" fill="'+RC.ink+'">'+v1+'</text>';
+  s+='<text x="'+cx+'" y="'+(y1-5)+'" font-size="9.5" text-anchor="middle" fill="'+(st.tot?RC.mute:st.c)+'">'+v2+'</text>';
+  s+='<text x="'+cx+'" y="'+(H-32)+'" font-size="10.5" font-weight="700" text-anchor="middle" fill="'+RC.ink+'">'+esc(st.k)+'</text>';
+  if(!st.tot)s+='<text x="'+cx+'" y="'+(H-18)+'" font-size="9.5" text-anchor="middle" fill="'+RC.mute+'">'+ab('من المحمل','of loaded')+' −'+f1(st.pp*100)+'%</text>';
+ }
+ if(lo>0)s+='<text x="4" y="'+(H-3)+'" font-size="8.5" fill="'+RC.mute+'">'+ab('المحور مقطوع لتوضيح الفواقد','axis truncated to show the losses')+'</text>';
+ return s+'</svg>';
+}
+function wfNote(R){
+ return '<div class="note">OEE = '+ab('توافر','A')+' × '+ab('أداء','P')+' × '+ab('جودة','Q')+' = '+fp(R.avF)+' × '+fp(R.pfFC)+' × '+fp(R.qlF)+' = <b>'+fp(R.oeeF)+'</b> • '+
+  ab('التحقيق (فعلي/محمل)','Achievement (actual/loaded)')+' = <b>'+fp(R.achF)+'</b> • '+ab('قيمة الدستة الضائعة','Value per lost dozen')+': '+f0(S.egp)+' '+ab('ج','EGP')+'</div>';
+}
+
+/* ---- action summary: where is the money, who owns it, what is recoverable ---- */
+function actionsData(R){
+ var rec=S.recover, tot=R.tDT||1;
+ var causes=R.par.filter(function(x){ return !S.planned.has(causeCode(x.lb)); })
+  .sort(function(a,b){ return b.egp-a.egp; }).slice(0,3)
+  .map(function(x){ return {lb:x.lb,h:x.h,share:x.h/tot,egp:x.egp,dz:x.dz,recEgp:x.egp*rec,recDz:x.dz*rec,owner:ownerOf(x.lb)}; });
+ var minT=0.015*R.tgG;
+ var rooms=R.rooms.filter(function(x){ return x.target>=minT; }).sort(function(a,b){ return a.oee-b.oee; }).slice(0,3);
+ var macs=R.topLoss.slice(0,3);
+ return {causes:causes,rooms:rooms,macs:macs,recEgp:sumBy(causes,function(x){return x.recEgp;}),recDz:sumBy(causes,function(x){return x.recDz;})};
+}
+function renderActions(R){
+ var A=actionsData(R), h='<div class="act">', i;
+ h+='<h4>'+ab('أكبر 3 أسباب توقف غير مخطط (بالقيمة)','Top 3 unplanned downtime causes (by value)')+'</h4>';
+ for(i=0;i<A.causes.length;i++){
+  var c=A.causes[i];
+  h+='<div class="row"><div class="rk">'+(i+1)+'</div><div><div class="ttl">'+esc(c.lb)+'</div><div class="sub">'+ab('المسؤول المقترح','Suggested owner')+': '+esc(c.owner)+' • '+f1(c.h)+ab(' س',' h')+' ('+fp(c.share)+ab(' من التوقف',' of downtime')+') • '+f0(c.egp)+ab(' ج',' EGP')+'</div></div>'+
+   '<div class="val"><b>+'+f0(c.recEgp)+'</b> '+ab('ج','EGP')+'<div class="sub">+'+f0(c.recDz)+' '+ab('دستة','doz')+'</div></div></div>';
+ }
+ if(!A.causes.length)h+='<div class="sub" style="padding:10px 0">'+ab('لا توجد أعطال غير مخططة في هذه الفترة','No unplanned downtime in this period')+'</div>';
+ h+='<div class="tot"><span>'+ab('لو خفضنا كل سبب من الثلاثة بنسبة','If each of the three is cut by')+' <input type="number" id="recIn" min="5" max="100" step="5" value="'+Math.round(S.recover*100)+'" onchange="setRecover(this.value)">%</span><span><b>+'+f0(A.recEgp)+'</b> '+ab('ج','EGP')+' • <b>+'+f0(A.recDz)+'</b> '+ab('دستة','doz')+'</span></div>';
+ if(A.rooms.length){
+  h+='<h4>'+ab('طرق تحتاج تركيز (أقل OEE)','Rooms to focus on (lowest OEE)')+'</h4><div class="sub">';
+  h+=A.rooms.map(function(x){ return ab('طرقة','Room')+' <b>'+esc(x.k)+'</b> — OEE '+fp(x.oee)+' • '+ab('تحقيق','Ach')+' '+fp(x.ach)+' • '+f1(x.dtT)+ab(' س توقف',' h DT'); }).join('<br>')+'</div>';
+ }
+ if(A.macs.length){
+  h+='<h4>'+ab('ماكينات بأعلى خسارة','Machines with the highest loss')+'</h4><div class="sub">';
+  h+=A.macs.map(function(x){ return ab('ماكينة','Machine')+' <b>'+esc(x.k)+'</b> — '+f1(x.h)+ab(' س',' h')+' • '+f0(x.egp)+ab(' ج',' EGP'); }).join('<br>')+'</div>';
+ }
+ h+='<div class="tools"><button class="btn sm" onclick="copyWA()">📋 '+ab('نسخ ملخص واتساب','Copy WhatsApp summary')+'</button><button class="btn sm ghost" onclick="shareWA()">💬 '+ab('فتح واتساب','Open WhatsApp')+'</button></div>';
+ h+='<div class="note">'+ab('نسبة التخفيض افتراضية (قابلة للتعديل) وليست نتيجة قياس. المسؤول المقترح حسب رقم العطل (مُعرّف في الكود بـ OWNERS).','The reduction % is an assumption (editable), not a measurement. Owner is suggested from the cause code (see OWNERS in the code).')+'</div></div>';
+ $('#actBody').innerHTML=h;
+}
+function setRecover(v){ v=+v; if(!(v>0))v=25; S.recover=Math.min(100,v)/100; saveState(); if(LASTR)renderActions(LASTR); }
+function waText(R){
+ var A=actionsData(R), L=[], P=R.prev;
+ L.push('📊 '+ab('تقرير التريكو','Knitting report')+' — '+dRange(R));
+ L.push('✅ '+ab('التحقيق','Achievement')+' '+fp(R.achF)+' | OEE '+fp(R.oeeF));
+ L.push('📦 '+ab('الفعلي','Actual')+' '+f0(R.actF)+' / '+ab('المحمل','Loaded')+' '+f0(R.tgG)+' '+ab('دستة','doz'));
+ L.push('⏱ '+ab('التوقف','Downtime')+' '+f0(R.tDT)+ab(' س',' h')+' | 💰 '+ab('الخسائر','Losses')+' '+f0(R.tLoss)+ab(' ج',' EGP'));
+ if(P){ var dA=(R.achF-P.achF)*100, dO=(R.oeeF-P.oeeF)*100; L.push('📈 '+ab('عن الفترة السابقة','vs previous')+': '+ab('التحقيق','Ach')+' '+(dA>=0?'+':'')+f1(dA)+' | OEE '+(dO>=0?'+':'')+f1(dO)+' '+ab('نقطة','pt')); }
+ if(A.causes.length){
+  L.push(''); L.push('🔻 '+ab('أهم أسباب التوقف غير المخطط','Top unplanned downtime causes')+':');
+  A.causes.forEach(function(c,i){ L.push((i+1)+') '+c.lb+' — '+f0(c.h)+ab(' س',' h')+' — '+f0(c.egp)+ab(' ج',' EGP')+' ('+c.owner+')'); });
+  L.push('💡 '+ab('لو قللنا كل سبب ','Cutting each by ')+Math.round(S.recover*100)+'% → +'+f0(A.recEgp)+ab(' ج',' EGP')+' / +'+f0(A.recDz)+ab(' دستة',' doz'));
+ }
+ if(A.rooms.length)L.push('🎯 '+ab('تركيز','Focus')+': '+A.rooms.map(function(x){ return ab('طرقة','Room')+' '+x.k+' (OEE '+fp(x.oee)+')'; }).join(' • '));
+ return L.join('\n');
+}
+function copyWA(){
+ var t=waText(LASTR);
+ function done(){ toast(ab('تم نسخ الملخص — الصقه في واتساب','Summary copied — paste it into WhatsApp')); }
+ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done,function(){ fallbackCopy(t); done(); }); }
+ else{ fallbackCopy(t); done(); }
+}
+function fallbackCopy(t){ var a=document.createElement('textarea'); a.value=t; a.style.position='fixed'; a.style.opacity='0'; document.body.appendChild(a); a.select(); try{ document.execCommand('copy'); }catch(e){} document.body.removeChild(a); }
+function shareWA(){ window.open('https://wa.me/?text='+encodeURIComponent(waText(LASTR)),'_blank'); }
+
+/* ---- everything v2 draws after render() has done the classic charts/tables ---- */
+function renderV2(R){
+ $('#heroRow').innerHTML=heroCards(R);
+ $('#wfBody').innerHTML=withTheme(true,function(){ return svgWaterfall(R); })+wfNote(R);
+ renderActions(R);
+ var G=withTheme(true,function(){ return buildGroupCharts(R); });
+ var map={sN:G.cN,sR:G.cR,sC:G.cC,sP:G.cP,sL:G.cL,sM:G.cM};
+ for(var k in map){ var el=$('#'+k); if(el)el.innerHTML=map[k]; }
+ setSourceBadge();
+ setTab(CURTAB,true);
+}
+function setSourceBadge(){
+ if(!DATA.name)return;
+ var m=CUR.mod?CUR.mod.toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+ var icon=CUR.src==='repo'?'📡':CUR.src==='saved'?'💾':'📄';
+ var lbl=CUR.src==='repo'?ab('من الـ repo — يتحدث تلقائيًا','from the repo — updates itself'):CUR.src==='saved'?ab('آخر ملف محفوظ على الجهاز','last file saved on this device'):ab('ملف مرفوع يدويًا','manually uploaded file');
+ $('#fname').textContent=icon+' '+DATA.name+(m?' • '+m:'');
+ $('#srcBar').innerHTML='<span>'+icon+' <b>'+esc(DATA.name)+'</b> — '+lbl+'</span>'+(m?'<span>'+ab('آخر تعديل للملف','File modified')+': <b>'+m+'</b></span>':'')+
+  '<span>'+ab('بيانات من','Data')+' <b>'+dFull(DATA.minD)+'</b> '+ab('إلى','to')+' <b>'+dFull(DATA.maxD)+'</b></span>';
+}
+
+/* ---- loading ---- */
+function loadBuffer(buf,name,meta){
+ $('#overlay').classList.add('on');
+ try{
+  var wb=XLSX.read(buf,{type:'array'});
+  parseAll(wb); populateFilters();
+  DATA.name=name; CUR=meta||{};
+  if(!CAN_SAVE){ restoreFilters(); CAN_SAVE=true; }
+  setTimeout(function(){ try{ refresh(); }catch(err){ showErr2(err); } $('#overlay').classList.remove('on'); },60);
+ }catch(err){ showErr2(err); $('#overlay').classList.remove('on'); }
+}
+function stampOf(r){ return [r.headers.get('Last-Modified'),r.headers.get('ETag'),r.headers.get('Content-Length')].join('|'); }
+function loadRemote(silent){
+ try{
+  return fetch(REMOTE_URL+'?_='+Date.now(),{cache:'no-store'}).then(function(r){
+   if(!r.ok)throw new Error('HTTP '+r.status);
+   var st=stampOf(r), lm=r.headers.get('Last-Modified'), first=!DATA.name;
+   return r.arrayBuffer().then(function(b){
+    var buf=new Uint8Array(b), nm=REMOTE_URL.replace(/^.*\//,'');
+    loadBuffer(buf,nm,{src:'repo',stamp:st,mod:lm?new Date(lm):null});
+    kvPut('last',{name:nm,buf:buf,mod:lm?+new Date(lm):Date.now()});
+    if(!first)toast(ab('تم تحديث البيانات من الـ repo','Data refreshed from the repo'));
+    return true;
+   });
+  }).catch(function(){ if(!silent)toast(ab('تعذر تحميل الملف من الـ repo','Could not load the file from the repo')); return false; });
+ }catch(e){ return Promise.resolve(false); }
+}
+function pollRemote(){
+ if(typeof document==='undefined'||document.hidden||CUR.src!=='repo')return;
+ try{
+  fetch(REMOTE_URL+'?_='+Date.now(),{method:'HEAD',cache:'no-store'}).then(function(r){
+   if(r.ok&&CUR.stamp&&stampOf(r)!==CUR.stamp)loadRemote(false);
+  }).catch(function(){});
+ }catch(e){}
+}
+function bootData(){
+ loadSaved(); restoreSettings();
+ return loadRemote(true).then(function(ok){
+  if(ok)return;
+  return kvGet('last').then(function(last){
+   if(last&&last.buf)loadBuffer(last.buf,last.name,{src:'saved',mod:last.mod?new Date(last.mod):null});
+  });
+ });
 }
 
 /* ===== Run ===== */
-function refresh(){ if(!DATA.load.length&&!DATA.prod.length&&!DATA.dt.length)return; render(compute()); }
+function refresh(){ if(!DATA.load.length&&!DATA.prod.length&&!DATA.dt.length)return; render(withPrev(compute())); saveState(); }
 function handleFile(f){
  if(!f)return;
  if(typeof XLSX==='undefined'){alert(bi('مكتبة الإكسيل مش محملة — تأكد من الإنترنت','Excel library not loaded — check internet'));return;}
  $('#overlay').classList.add('on');
  var r=new FileReader();
  r.onload=function(e){
-  try{
-   var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
-   parseAll(wb);
-   populateFilters();
-   DATA.name=f.name;
-   $('#fname').textContent='📄 '+f.name;
-   setTimeout(function(){ try{refresh();}catch(err){showErr2(err);} $('#overlay').classList.remove('on'); },60);
-  }catch(err){ showErr2(err); $('#overlay').classList.remove('on'); }
+  var buf=new Uint8Array(e.target.result);
+  loadBuffer(buf,f.name,{src:'upload',stamp:'',mod:f.lastModified?new Date(f.lastModified):null});
+  kvPut('last',{name:f.name,buf:buf,mod:f.lastModified||Date.now()});
  };
  r.readAsArrayBuffer(f);
 }
@@ -1366,60 +1742,16 @@ function applySettings(){
  S.sc=+$('#sSC').value||20;
  S.dc=+$('#sDC').value||10;
  S.egp=+$('#sEGP').value||150;
+ S.recover=Math.min(100,+$('#sRec').value||25)/100;
  closeSettings();
  try{refresh();}catch(err){showErr2(err);}
 }
 </script>
- <script>
-// تحميل ملف Excel أوتوماتيك لما الصفحة تفتح
-window.addEventListener('DOMContentLoaded', async function() {
-    console.log('جاري تحميل ملف OEE8.xlsx أوتوماتيك...');
-    
-    try {
-        // جلب ملف Excel من نفس المجلد
-        const response = await fetch('./OEE8.xlsx');
-        
-        if (!response.ok) {
-            throw new Error('فشل تحميل الملف - تأكد من وجود OEE8.xlsx في نفس المجلد');
-        }
-        
-        const arrayBuffer = await response.arrayBuffer();
-        console.log('تم تحميل الملف بنجاح، جاري التحليل...');
-        
-        // قراءة الملف باستخدام XLSX
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-        
-        // البحث عن عنصر input file في الصفحة
-        const fileInput = document.querySelector('input[type="file"]');
-        
-        if (fileInput) {
-            // إنشاء File object
-            const file = new File([arrayBuffer], 'OEE8.xlsx', {
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            });
-            
-            // إنشاء DataTransfer
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(file);
-            fileInput.files = dataTransfer.files;
-            
-            // تشغيل حدث change عشان الكود الأصلي يشتغل
-            const event = new Event('change', { bubbles: true });
-            fileInput.dispatchEvent(event);
-            
-            console.log('✅ تم تحميل البيانات أوتوماتيك!');
-            
-            // إخفاء رسالة "لم يتم رفع ملف بعد" لو موجودة
-            const noFileMsg = document.querySelector('.no-file-message');
-            if (noFileMsg) noFileMsg.style.display = 'none';
-        }
-        
-    } catch (error) {
-        console.error('❌ خطأ في التحميل الأوتوماتيك:', error);
-        // ممكن تضيف هنا alert لو عايز
-        // alert('حدث خطأ في تحميل الملف. حاول refresh الصفحة.');
-    }
-});
+<script>
+// Auto-start: load the repo file (or the last file saved on this device), keep it fresh while the page is open.
+window.addEventListener('DOMContentLoaded',function(){ bootData(); });
+setInterval(pollRemote,POLL_MS);
+document.addEventListener('visibilitychange',function(){ if(!document.hidden)pollRemote(); });
 </script>
 </body>
 </html>
