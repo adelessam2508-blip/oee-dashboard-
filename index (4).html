@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SOLO | لوحة كفاءة التريكو | Knitting OEE Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
@@ -242,9 +242,101 @@ details.fold .kpis{margin:6px 0 12px}
  body.pdf-mode details.fold{border:none;padding:0}
  body.pdf-mode details.fold>summary{display:none}
 }
+
+/* ===== v3: light "studio" look + spring motion (visual layer only) ===== */
+:root{--bg:#f1f2f5;--card:#fff;--solid:#fff;--line:rgba(15,18,32,.08);--txt:#0f1220;--mut:#6b7280;--cy:#ff5a47;--cy2:#ff8f5c;--te:#16a34a;--am:#ea7a0c;--rd:#e11d48;--bl:#2563eb;--vi:#7c3aed;
+--surf2:#f4f5f8;--ink:#0f1220;--onink:#fff;--glass:rgba(255,255,255,.75);--hatch:rgba(15,18,32,.09);--rad:22px;--spring:cubic-bezier(.34,1.45,.5,1);
+--sh:0 1px 2px rgba(15,18,32,.04),0 16px 36px -16px rgba(15,18,32,.16)}
+body.dark{--bg:#0d1424;--card:rgba(255,255,255,.05);--solid:#16203a;--line:rgba(255,255,255,.10);--txt:#eef2f7;--mut:#9aa7ba;--cy:#ff6b57;--cy2:#ff9a6a;--te:#34d399;--am:#fb923c;--rd:#f87171;--bl:#7cb8ff;--vi:#c4b5fd;
+--surf2:#16203a;--ink:#eef2f7;--onink:#0d1424;--glass:rgba(13,20,36,.8);--hatch:rgba(255,255,255,.12);--sh:none}
+body{font-family:'Inter','Tajawal',sans-serif}
+body::before{background:radial-gradient(640px 420px at 88% -4%,rgba(255,90,71,.14),transparent),radial-gradient(720px 520px at 2% 100%,rgba(37,99,235,.09),transparent)}
+body.dark::before{background:radial-gradient(600px 400px at 85% 10%,rgba(255,107,87,.12),transparent),radial-gradient(700px 500px at 10% 90%,rgba(124,184,255,.10),transparent)}
+header{margin:12px 22px 0;top:10px;border:1px solid var(--line);border-radius:28px;background:var(--glass);overflow:hidden;box-shadow:var(--sh);animation:dropIn .7s var(--spring) both}
+header::after{background:linear-gradient(90deg,transparent,var(--cy),var(--cy2),transparent);background-size:200% 100%;animation:headerSweep 8s linear infinite;opacity:.55}
+@keyframes dropIn{from{opacity:0;transform:translateY(-24px)}to{opacity:1;transform:none}}
+.logo-txt{color:var(--ink);text-shadow:none}
+.logo-arc{border-color:var(--ink);border-left-color:var(--cy);filter:none}
+.btn{background:var(--ink);color:var(--onink);border:0;border-radius:999px;font-weight:700;padding:10px 17px;box-shadow:0 8px 18px -8px rgba(15,18,32,.55);transition:transform .35s var(--spring),box-shadow .3s,border-color .3s}
+.btn:hover{transform:translateY(-3px);box-shadow:0 14px 26px -10px rgba(15,18,32,.55)}
+.btn.ghost{background:var(--card);color:var(--txt);border:1px solid var(--line);box-shadow:none}
+.btn.ghost:hover{border-color:var(--cy);box-shadow:0 10px 22px -12px rgba(255,90,71,.6)}
+.langbtn.active{background:var(--ink)!important;color:var(--onink)!important;border-color:transparent!important}
+.filters,.kpi,.panel,details.fold,.sum .box{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);box-shadow:var(--sh)}
+.filters{border-radius:26px;padding:16px}
+.filters input,.filters select,.act input[type=number]{background:var(--surf2);border:1px solid var(--line);border-radius:999px;color:var(--txt);padding:8px 13px}
+.filters input:focus,.filters select:focus{border-color:var(--cy);box-shadow:0 0 0 4px rgba(255,90,71,.12)}
+.panel{padding:18px}
+.panel h3{font-size:14.5px;color:var(--txt);font-weight:800;letter-spacing:-.2px;margin-bottom:12px}
+.sum .g{background:rgba(22,163,74,.07)}.sum .w{background:rgba(234,122,12,.08)}.sum .c{background:rgba(225,29,72,.07)}
+.kpi,.panel,.filters,.sum .box,#drop{animation-name:fadeUp;animation-duration:.8s;animation-timing-function:var(--spring);animation-fill-mode:backwards}
+@keyframes fadeUp{from{opacity:0;transform:translateY(28px) scale(.97)}to{opacity:1;transform:none}}
+.kpi,.panel{transition:transform .45s var(--spring),box-shadow .3s,border-color .3s}
+.kpi:hover,.panel:hover{transform:translateY(-5px);border-color:rgba(255,90,71,.35);box-shadow:0 22px 44px -18px rgba(15,18,32,.25)}
+body.dark .kpi:hover,body.dark .panel:hover{box-shadow:0 22px 44px -18px rgba(0,0,0,.6)}
+.kpi::before,.panel::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .35s;background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%),rgba(255,90,71,.11),transparent 70%)}
+.kpi:hover::before,.panel:hover::before{opacity:1}
+.kpi .v{font-family:'Inter','Tajawal',sans-serif;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.kpi .bar{height:8px;border-radius:99px;background:linear-gradient(135deg,var(--hatch) 25%,transparent 25% 50%,var(--hatch) 50% 75%,transparent 75%);background-size:9px 9px}
+.kpi .bar i{position:relative;overflow:hidden;border-radius:99px}
+.kpi .bar i::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-110%);animation:barShine 3s ease-in-out 1.6s infinite}
+@keyframes barShine{55%,100%{transform:translateX(110%)}}
+@keyframes hatchMove{to{background-position:9px 0}}
+.hero{grid-template-columns:repeat(12,1fr);gap:14px}
+.hero .kpi{grid-column:span 4;padding:18px 20px}
+.hero .kpi:nth-child(1){grid-column:span 6}
+.hero .kpi:nth-child(2),.hero .kpi:nth-child(3){grid-column:span 3}
+.hero .kpi:nth-child(1) .v{font-size:56px;line-height:1.05;margin:8px 0}
+.hero .kpi:nth-child(1) .bar{height:14px}
+.hero .kpi .bar{animation:hatchMove 1.4s linear infinite}
+.hero .kpi:nth-child(2){background:linear-gradient(150deg,#1b2036,#0a0c16);border-color:transparent;--te:#34d399;--am:#fb923c;--rd:#f87171;--mut:#a7b0c4;--hatch:rgba(255,255,255,.14);color:#fff}
+.hero .kpi:nth-child(2)::after{display:block;content:'';position:absolute;inset:auto;top:-46px;right:-46px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(255,90,71,.6),transparent 70%);transform:none;animation:glowPulse 4s ease-in-out infinite}
+@keyframes glowPulse{50%{transform:scale(1.25);opacity:.7}}
+.hero .kpi:nth-child(1){animation-delay:0.12s}.hero .kpi:nth-child(2){animation-delay:0.19s}.hero .kpi:nth-child(3){animation-delay:0.26s}.hero .kpi:nth-child(4){animation-delay:0.33s}.hero .kpi:nth-child(5){animation-delay:0.40s}.hero .kpi:nth-child(6){animation-delay:0.47s}
+@media(max-width:1000px){.hero .kpi,.hero .kpi:nth-child(n){grid-column:span 6}}
+@media(max-width:600px){.hero .kpi,.hero .kpi:nth-child(n){grid-column:span 12}.hero .kpi:nth-child(1) .v{font-size:44px}}
+#tabsBar{display:inline-flex;gap:4px;padding:5px;border:1px solid var(--line);border-radius:999px;background:var(--card);box-shadow:var(--sh);margin:10px 0 18px}
+.tabbtn{border:0;border-radius:999px;margin:0;padding:9px 20px;transition:background .35s,color .35s,transform .35s var(--spring)}
+.tabbtn:hover{transform:translateY(-1px)}
+.tabbtn.on{background:var(--ink);color:var(--onink)}
+.tabpane.on{animation:paneIn .55s var(--spring) both}
+@keyframes paneIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+th{background:var(--surf2);color:var(--mut);font-weight:700}
+td{border-bottom:1px solid var(--line)}
+tr:hover td{background:rgba(255,90,71,.05)}
+.tot td{background:rgba(255,90,71,.10);color:var(--cy);border-top:2px solid var(--cy)}
+[style*="#1a2740"]{background:var(--surf2)!important}
+.dl{background:rgba(127,127,127,.13)}
+.act .rk{background:rgba(255,90,71,.14)}
+details.fold>summary{color:var(--txt)}
+.modal .panel{background:var(--solid)}
+#toast{background:var(--ink);color:var(--onink);border:0;border-radius:999px}
+#overlay{background:rgba(241,242,245,.88);backdrop-filter:blur(8px)}
+body.dark #overlay{background:rgba(13,20,36,.9)}
+.spin{border-color:rgba(255,90,71,.2);border-top-color:var(--cy)}
+#drop{border:2px dashed rgba(255,90,71,.45);border-radius:30px;background:var(--card)}
+#drop.over{background:rgba(255,90,71,.07)}
+.panel svg rect{transform-box:fill-box;transform-origin:0 50%;animation:growX .95s cubic-bezier(.22,1,.36,1) backwards}
+#wfBody svg rect{transform-origin:50% 100%;animation-name:growY}
+@keyframes growX{from{transform:scaleX(0)}}
+@keyframes growY{from{transform:scaleY(0)}}
+/* ===== print: no animation / shadow / blur / fixed backgrounds -> fast print preview ===== */
+@media print{
+ body::before,.kpi::before,.panel::before{display:none!important}
+ *{animation:none!important;transition:none!important;box-shadow:none!important;backdrop-filter:none!important;text-shadow:none!important;filter:none!important}
+ body.report-mode #overlay,body.report-mode #toast,body.report-mode #errBanner{display:none!important}
+ body.pdf-mode header{position:static;margin:0 0 8px;background:var(--card);border-radius:14px}
+ .panel svg rect{transform:none!important}
+}
+
+.tblwrap#heat{max-height:62vh}
+#heat td:first-child{position:sticky;inset-inline-start:0;z-index:1}
+#heat th{z-index:2}
+@media print{.tblwrap#heat{max-height:none}}
 </style>
 </head>
 <body class="lang-both">
+<script>try{if(localStorage.getItem("solo_theme")==="dark")document.body.classList.add("dark")}catch(e){}</script>
 <div id="errBanner"></div>
 <div id="overlay"><div class="spin"></div><div><span class="ar">بيتم تحليل الملف وبناء الداشبورد...</span><span class="en">Analyzing file & building dashboard...</span></div></div>
 <header>
@@ -262,6 +354,7 @@ details.fold .kpis{margin:6px 0 12px}
   <button class="btn ghost langbtn" data-lang="en" onclick="setLang('en')">EN</button>
   <button class="btn ghost langbtn active" data-lang="both" onclick="setLang('both')">EN|AR</button>
   <button class="btn ghost" onclick="loadRemote(false)" title="reload the repo file">🔄 <span class="ar">تحديث البيانات</span><span class="en">Reload data</span></button>
+  <button class="btn ghost" onclick="toggleTheme()" title="Light / Dark">🌓 <span class="ar">الوضع</span><span class="en">Theme</span></button>
   <button class="btn ghost" onclick="openSettings()">⚙️ <span class="ar">الإعدادات</span><span class="en">Settings</span></button>
   <button class="btn ghost" onclick="printColorPDF()">🎨 <span class="ar">PDF بالألوان</span><span class="en">Color PDF</span></button>
   <button class="btn ghost" onclick="printReport()">🖨️ <span class="ar">تقرير شامل</span><span class="en">Full Report</span></button>
@@ -957,7 +1050,7 @@ function compute(ov){
  topLoss.sort(function(a,b){return b.egp-a.egp;}); topLoss=topLoss.slice(0,5);
  var stCount={}; for(i=0;i<mArr.length;i++)stCount[mArr[i].st]=(stCount[mArr[i].st]||0)+1;
 
- var hM=mArr.filter(function(x){return x.o.dz>0||x.o.cap>0;}).sort(function(a,b){return (+a.m)-(+b.m);}).slice(0,60).map(function(x){return x.m;});
+ var hM=mArr.filter(function(x){return x.o.dz>0||x.o.cap>0;}).sort(function(a,b){return (+a.m)-(+b.m);}).map(function(x){return x.m;});
  var hD=present.slice(-31);
  var heat=hM.map(function(m7){
   return hD.map(function(d7){
@@ -1054,13 +1147,24 @@ function buildKpiCards(R){
  ];
 }
 function fmtCard(c){ return c.fmt==='fp'?fp(c.v):c.fmt==='f1'?f1(c.v):f0(c.v); }
+function CC(){return document.body.classList.contains('dark')?{mut:'#9aa7ba',txt:'#eef2f7',grid:'rgba(255,255,255,.06)',acc:'#ff6b57',tip:'#0a0c16'}:{mut:'#6b7280',txt:'#0f1220',grid:'rgba(15,18,32,.07)',acc:'#ff5a47',tip:'#0f1220'};}
+function hexA(h,a){ var m=/^#([0-9a-f]{6})$/i.exec(h||''); if(!m)return null; var n=parseInt(m[1],16); return 'rgba('+(n>>16)+','+((n>>8)&255)+','+(n&255)+','+a+')'; }
 function mkChart(id,type,labs,ds,pctAxis,dual){
- if(!$('#'+id))return;
- var scales={y:pctAxis?{ticks:{color:'#9aa7ba',callback:function(v){return v+'%';}},grid:{color:'rgba(255,255,255,.06)'}}:{ticks:{color:'#9aa7ba'},grid:{color:'rgba(255,255,255,.06)'}}};
- if(dual)scales.y2={position:'left',ticks:{color:'#f6c453'},grid:{drawOnChartArea:false}};
+ if(!$('#'+id))return; var c=CC(), dn=(type==='doughnut');
+ ds.forEach(function(d){
+  if(type==='bar'&&!d.type){ d.borderRadius=7; d.borderSkipped=false; }
+  if(type==='line'){ if(d.pointRadius==null)d.pointRadius=0; d.pointHoverRadius=5; d.borderWidth=d.borderWidth||2.4; }
+  if(dn){ d.borderWidth=0; d.borderRadius=8; d.spacing=3; d.hoverOffset=8; }
+  if(d.fill&&hexA(d.borderColor,1)){ var base=d.borderColor; d.backgroundColor=function(x){ var ar=x.chart.chartArea; if(!ar)return hexA(base,.15); var g=x.chart.ctx.createLinearGradient(0,ar.top,0,ar.bottom); g.addColorStop(0,hexA(base,.30)); g.addColorStop(1,hexA(base,0)); return g; }; }
+ });
+ var yt={color:c.mut}; if(pctAxis)yt.callback=function(v){return v+'%';};
+ var scales=dn?{}:{x:{ticks:{color:c.mut},grid:{display:false}},y:{ticks:yt,grid:{color:c.grid},border:{display:false}}};
+ if(dual)scales.y2={position:'left',ticks:{color:c.acc},grid:{drawOnChartArea:false},border:{display:false}};
  CH[id]=new Chart($('#'+id),{type:type,data:{labels:labs,datasets:ds},options:{responsive:true,
-  animation:{duration:1100,easing:'easeOutQuart'},
-  plugins:{legend:{labels:{color:'#eef2f7',font:{family:'Tajawal'}}}},
+  interaction:{mode:'index',intersect:false},
+  animation:{duration:1300,easing:'easeOutQuart',delay:function(x){ return (x.type==='data'&&x.mode==='default')?x.dataIndex*30:0; }},
+  plugins:{legend:{labels:{color:c.txt,usePointStyle:true,pointStyle:'circle',boxWidth:8,font:{family:'Tajawal'}}},
+   tooltip:{backgroundColor:c.tip,titleColor:'#fff',bodyColor:'#fff',cornerRadius:12,padding:11,boxPadding:4}},
   scales:scales}});
 }
 
@@ -1070,7 +1174,7 @@ function mkChart(id,type,labs,ds,pctAxis,dual){
  * feeds the on-screen KPI cards, so header, tiles, charts and totals can never disagree. */
 var RCL={good:'#16a34a',warn:'#d97706',bad:'#dc2626',blue:'#2563eb',vio:'#7c3aed',gray:'#d1d5db',slate:'#94a3b8',ink:'#111827',mute:'#6b7280',stripe:'#f3f4f6',sep:'#9ca3af',grid:'#e5e7eb',bg:'#ffffff'};
 var RCD={good:'#34d399',warn:'#fb923c',bad:'#f87171',blue:'#7cb8ff',vio:'#c4b5fd',gray:'rgba(255,255,255,.16)',slate:'#64748b',ink:'#eef2f7',mute:'#9aa7ba',stripe:'rgba(255,255,255,.045)',sep:'rgba(255,255,255,.28)',grid:'rgba(255,255,255,.09)',bg:'#0d1424'};
-var RC=RCL; // charts read RC at draw time -> withTheme(true, fn) draws them for the dark screen
+var RC=RCL; // charts read RC at draw time -> withTheme(document.body.classList.contains('dark'), fn) draws them for the dark screen
 function withTheme(dark,fn){ var o=RC; RC=dark?RCD:RCL; try{ return fn(); } finally{ RC=o; } }
 var KCOL={'var(--te)':'#15803d','var(--am)':'#b45309','var(--rd)':'#b91c1c','var(--cy)':'#a16207','var(--bl)':'#1d4ed8','var(--vi)':'#6d28d9','var(--txt)':'#111827'};
 function cb(ar,en){ return LANG==='ar'?ar:en; } // text INSIDE svg charts: Arabic-only or English-only (no mixed bidi)
@@ -1320,11 +1424,20 @@ function buildReport(R){
 
 function printReport(){
  if(!LASTR){alert(bi('ارفع ملف الإكسيل الأول','Upload the Excel file first'));return;}
- buildReport(LASTR);
- document.body.classList.add('report-mode');
- var clean=function(){ document.body.classList.remove('report-mode'); window.removeEventListener('afterprint',clean); };
- window.addEventListener('afterprint',clean);
- setTimeout(function(){ window.print(); },120);
+ var ov=$('#overlay'), tx=ov.lastElementChild, old=tx.innerHTML, t0=performance.now();
+ tx.innerHTML=bi('بيتجهز التقرير الشامل...','Preparing the full report...');
+ ov.classList.add('on');
+ var done=function(){ ov.classList.remove('on'); tx.innerHTML=old; document.body.classList.remove('report-mode'); window.removeEventListener('afterprint',done); };
+ window.addEventListener('afterprint',done);
+ requestAnimationFrame(function(){ setTimeout(function(){
+  try{ buildReport(LASTR); }catch(err){ done(); showErr2(err); return; }
+  var t1=performance.now();
+  var fr=(document.fonts&&document.fonts.ready)?Promise.race([document.fonts.ready,new Promise(function(r){setTimeout(r,600);})]):Promise.resolve();
+  fr.then(function(){
+   document.body.classList.add('report-mode'); ov.classList.remove('on');
+   requestAnimationFrame(function(){ requestAnimationFrame(function(){ console.log('[report] built in '+Math.round(t1-t0)+' ms'); window.print(); }); });
+  });
+ },30); });
 }
 
 function render(R){
@@ -1354,20 +1467,20 @@ function render(R){
   mkChart('chProd','line',labs,[
    {label:bi('مستهدف (محمل)','Target (Loaded)'),data:R.daily.map(function(x){return +x.target.toFixed(1);}),borderColor:'#7cb8ff',backgroundColor:'rgba(124,184,255,.15)',fill:true,tension:.35},
    {label:bi('فعلي (+درجة2)','Actual (+Grade B)'),data:R.daily.map(function(x){return +x.actual.toFixed(1);}),borderColor:'#34d399',backgroundColor:'rgba(52,211,153,.15)',fill:true,tension:.35}]);
-  mkChart('chOEE','line',labs,[{label:'OEE %',data:R.daily.map(function(x){return +(x.oee*100).toFixed(1);}),borderColor:'#f6c453',backgroundColor:'rgba(246,196,83,.18)',fill:true,tension:.35}],true);
+  mkChart('chOEE','line',labs,[{label:'OEE %',data:R.daily.map(function(x){return +(x.oee*100).toFixed(1);}),borderColor:'#ff5a47',backgroundColor:'rgba(255,90,71,.18)',fill:true,tension:.35}],true);
   mkChart('chAPQ','line',labs,[
    {label:bi('توافر','Availability'),data:R.daily.map(function(x){return +(x.av*100).toFixed(1);}),borderColor:'#34d399',tension:.3},
    {label:bi('أداء','Performance'),data:R.daily.map(function(x){return +(x.perf*100).toFixed(1);}),borderColor:'#fb923c',tension:.3},
    {label:bi('جودة','Quality'),data:R.daily.map(function(x){return +(x.qual*100).toFixed(1);}),borderColor:'#7cb8ff',tension:.3}],true);
   mkChart('chDT','bar',labs,[
    {label:bi('ساعات توقف','Downtime h'),data:R.daily.map(function(x){return +x.dt.toFixed(1);}),backgroundColor:'rgba(248,113,113,.55)',yAxisID:'y'},
-   {label:bi('خسارة (ج)','Loss (EGP)'),data:R.daily.map(function(x){return Math.round(x.loss);}),type:'line',borderColor:'#f6c453',yAxisID:'y2'}],false,true);
+   {label:bi('خسارة (ج)','Loss (EGP)'),data:R.daily.map(function(x){return Math.round(x.loss);}),type:'line',borderColor:'#ff5a47',yAxisID:'y2'}],false,true);
   mkChart('chPar','bar',R.par.slice(0,10).map(function(x){return x.lb;}),[
    {label:bi('ساعات','Hours'),data:R.par.slice(0,10).map(function(x){return +x.h.toFixed(1);}),backgroundColor:'rgba(124,184,255,.55)',yAxisID:'y'},
    {label:bi('تراكمي %','Cum %'),data:R.par.slice(0,10).map(function(x){return +(x.cum*100).toFixed(1);}),type:'line',borderColor:'#f87171',yAxisID:'y2'}],false,true);
   var stL=[],stV=[];
   for(var s in R.stCount){ stL.push(s); stV.push(R.stCount[s]); }
-  mkChart('chStatus','doughnut',stL,[{data:stV,backgroundColor:['#34d399','#f6c453','#fb923c','#f87171','#7cb8ff','#94a3b8']}]);
+  mkChart('chStatus','doughnut',stL,[{data:stV,backgroundColor:['#34d399','#ff5a47','#fb923c','#f87171','#7cb8ff','#94a3b8']}]);
  }
 
  var nT=gTotals(R.needles,R), rT=gTotals(R.rooms,R), cT=gTotals(R.custs,R);
@@ -1409,7 +1522,7 @@ function render(R){
   hh+='</tr>';
  }
  hh+='</table>';
- $('#heat').innerHTML=hh;
+ $('#heat').innerHTML='<div class="note" style="margin:0 0 8px">'+bi('عدد الماكينات في الخريطة','Machines in heatmap')+': <b>'+R.heatM.length+'</b></div>'+hh;
 
  var sm='';
  sm+='<div class="box g"><h4 class="good">✅ '+bi('جيد','GOOD')+'</h4><ul>';
@@ -1653,9 +1766,9 @@ function shareWA(){ window.open('https://wa.me/?text='+encodeURIComponent(waText
 /* ---- everything v2 draws after render() has done the classic charts/tables ---- */
 function renderV2(R){
  $('#heroRow').innerHTML=heroCards(R);
- $('#wfBody').innerHTML=withTheme(true,function(){ return svgWaterfall(R); })+wfNote(R);
+ $('#wfBody').innerHTML=withTheme(document.body.classList.contains('dark'),function(){ return svgWaterfall(R); })+wfNote(R);
  renderActions(R);
- var G=withTheme(true,function(){ return buildGroupCharts(R); });
+ var G=withTheme(document.body.classList.contains('dark'),function(){ return buildGroupCharts(R); });
  var map={sN:G.cN,sR:G.cR,sC:G.cC,sP:G.cP,sL:G.cL,sM:G.cM};
  for(var k in map){ var el=$('#'+k); if(el)el.innerHTML=map[k]; }
  setSourceBadge();
@@ -1752,6 +1865,19 @@ function applySettings(){
 window.addEventListener('DOMContentLoaded',function(){ bootData(); });
 setInterval(pollRemote,POLL_MS);
 document.addEventListener('visibilitychange',function(){ if(!document.hidden)pollRemote(); });
+</script>
+<script>
+function toggleTheme(){ var d=document.body.classList.toggle('dark'); try{localStorage.setItem('solo_theme',d?'dark':'light');}catch(e){} try{refresh();}catch(e){} }
+(function(){
+ var raf=0;
+ document.addEventListener('pointermove',function(e){ var t=e.target.closest&&e.target.closest('.kpi,.panel'); if(!t||raf)return;
+  raf=requestAnimationFrame(function(){ raf=0; var r=t.getBoundingClientRect(); t.style.setProperty('--mx',(e.clientX-r.left)+'px'); t.style.setProperty('--my',(e.clientY-r.top)+'px'); }); },{passive:true});
+ var _r=render;
+ render=function(R){ _r(R);
+  document.querySelectorAll('.panel svg').forEach(function(sv){ var rs=sv.querySelectorAll('rect'), st=sv.closest('#wfBody')?.14:.025;
+   for(var i=0;i<rs.length;i++)rs[i].style.animationDelay=(.12+Math.min(i,40)*st)+'s'; });
+ };
+})();
 </script>
 </body>
 </html>
